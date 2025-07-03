@@ -1,1 +1,0 @@
-/home/nlion/Data/other/Projects/Rust/arch-manwarn/target/debug/arch-manwarn: /home/nlion/Data/other/Projects/Rust/arch-manwarn/src/cache.rs /home/nlion/Data/other/Projects/Rust/arch-manwarn/src/main.rs /home/nlion/Data/other/Projects/Rust/arch-manwarn/src/rss.rs
