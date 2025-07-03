@@ -1,0 +1,5 @@
+/target
+/pkg
+
+# Ignore local save for development
+arch-manwarn-dev.json
