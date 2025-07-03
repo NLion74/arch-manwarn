@@ -3,12 +3,12 @@
 pkgname = arch-manwarn
 pkgbase = arch-manwarn
 xdata = pkgtype=pkg
-pkgver = 0.1.0-1
+pkgver = 0.2.0-1
 pkgdesc = Minimalist pacman hook to warn about Arch News manual interventions
 url = https://github.com/NLion74/arch-manwarn
-builddate = 1751577206
+builddate = 1751577486
 packager = Unknown Packager
-size = 5311968
+size = 5312022
 arch = x86_64
 license = UNLICENSE
 depend = pacman

@@ -3,10 +3,10 @@
 pkgname = arch-manwarn-debug
 pkgbase = arch-manwarn
 xdata = pkgtype=debug
-pkgver = 0.1.0-1
+pkgver = 0.2.0-1
 pkgdesc = Detached debugging symbols for arch-manwarn
 url = https://github.com/NLion74/arch-manwarn
-builddate = 1751577206
+builddate = 1751577486
 packager = Unknown Packager
 size = 2834424
 arch = x86_64

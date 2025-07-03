@@ -1,32 +1,34 @@
 # arch-manwarn
 
-Don't feel like always keeping up with arch news for required manual intervention before every single system upgrade? This package may be the solution for you.
-A minimalist utility that checks Arch news RSS for manual intervention warnings and warns you before system upgrades.
+Tired of having to check Arch news for manual interventions before every upgrade? This tool is for you.
+**arch-manwarn** is a minimalist utility that checks the Arch news RSS feed for manual intervention warnings and blocks your pacman upgrade or install if you need to take action.
 
 ## What does it do?
 
-When pacman install or upgrade is run this program will run as a pacman hook. If it parses any news that classified as manual intervention it will exit and mark the news as read. Originally it was planned to be interactive but pacman hooks are inherently not designed for this behaviour.
+When pacman installs or upgrades packages, this program runs as a pacman hook. If it detects any news classified as requiring manual intervention, it will block the pacman transaction and mark the news as read. Originally, it was planned to be interactive, but pacman hooks are not designed for interactive behavior.
 
-On first run arch-manwarn assumes you have seen and applied all manual interventions to this point
+On the first run, arch-manwarn assumes you have seen and applied all manual interventions up to that point.
 
 # Why this?
 
-I created this project so that I would not miss any manual interventions in the arch news but I also did not want to read any arch news that do not affect me directly. Therefore I created this project with a focus on minimalism. If you find yourself asking why not just interrupt for all new news and wish to have this functionality you may refer to [this project](https://github.com/bradford-smith94/informant) which I found after creating this very one. It works very similiar but interrupts for every new news.
+I created this project so that I would not miss any manual interventions in the Arch news, but I also did not want to read any Arch news that does not affect me directly. Therefore, this project focuses on minimalism rather than notifying about all news.
 
-## Installation
+If you want a tool that interrupts for every new Arch news, you may refer to [this project](https://github.com/bradford-smith94/informant), which I found shortly after creating this one. It works similarly but interrupts for every new Arch news.
 
-# Development
+# Installation
 
-Due to permission issues when not using the `archNewsHook.hook`, but running the program manually instead, you may need to change the cache path from `/var/cache`
+## AUR (Recommended)
 
-This can be done like following:
+## Development
+
+Due to permission issues when running the program manually instead of via the archNewsHook.hook, you may need to change the cache path from /var/cache. You can do this like so:
 
 ```
 ARCH_NEWS_CACHE_PATH=./arch-manwarn-dev.json cargo run
 ```
 
-1. Build:
-   cargo build --release
+1. Build the release binary:
+   `cargo build --release`
 
 2. Copy binary to `/usr/bin/arch-manwarn`
 

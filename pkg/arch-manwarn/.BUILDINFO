@@ -1,11 +1,11 @@
 format = 2
 pkgname = arch-manwarn
 pkgbase = arch-manwarn
-pkgver = 0.1.0-1
+pkgver = 0.2.0-1
 pkgarch = x86_64
-pkgbuild_sha256sum = 6383d9d1b3c37199649b28fa55d81e610e6521c4b87f3544d4b9aeca941d7409
+pkgbuild_sha256sum = 1dc7f3d2c01ac6011e4d0ae45459aa7057e38ff767c4244673690781c4ac789e
 packager = Unknown Packager
-builddate = 1751577206
+builddate = 1751577486
 builddir = /home/nlion/Data/other/Projects/Rust/arch-manwarn
 startdir = /home/nlion/Data/other/Projects/Rust/arch-manwarn
 buildtool = makepkg

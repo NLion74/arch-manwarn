@@ -1,0 +1,12 @@
+/home/nlion/Data/other/Projects/Rust/arch-manwarn/target/debug/deps/libasync_lock-b30d4e31fe5625bf.rmeta: /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/lib.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/barrier.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/mutex.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/once_cell.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/rwlock.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/rwlock/futures.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/rwlock/raw.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/semaphore.rs
+
+/home/nlion/Data/other/Projects/Rust/arch-manwarn/target/debug/deps/async_lock-b30d4e31fe5625bf.d: /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/lib.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/barrier.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/mutex.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/once_cell.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/rwlock.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/rwlock/futures.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/rwlock/raw.rs /home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/semaphore.rs
+
+/home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/lib.rs:
+/home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/barrier.rs:
+/home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/mutex.rs:
+/home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/once_cell.rs:
+/home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/rwlock.rs:
+/home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/rwlock/futures.rs:
+/home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/rwlock/raw.rs:
+/home/nlion/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-lock-3.4.0/src/semaphore.rs:
