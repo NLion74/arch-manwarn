@@ -19,9 +19,11 @@ If you want a tool that interrupts for every new Arch news, you may refer to [th
 
 ## AUR (Recommended)
 
+Since this package is exclusive to Arch and the pacman package manager, this package is only available to be installed from my [AUR Package](https://aur.archlinux.org/packages/arch-manwarn).
+
 ## Development
 
-Due to permission issues when running the program manually instead of via the archNewsHook.hook, you may need to change the cache path from /var/cache. You can do this like so:
+Due to permission issues when running the program manually instead of via the arch-manwarn.hook, you may need to change the cache path from /var/cache. You can do this like so:
 
 ```
 ARCH_NEWS_CACHE_PATH=./arch-manwarn-dev.json cargo run
