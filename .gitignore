@@ -1,4 +1,4 @@
 /target
 
 # Ignore local save for development
-.arch-manwarn-dev.json
+arch-manwarn-dev.json
