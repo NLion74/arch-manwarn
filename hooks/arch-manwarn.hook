@@ -1,0 +1,11 @@
+[Trigger]
+Operation = Upgrade
+Operation = Install
+Type = Package
+Target = *
+
+[Action]
+Description = Checking Arch news for manual intervention...
+When = PreTransaction
+AbortOnFail
+Exec = /usr/bin/arch-manwarn
