@@ -1,6 +1,6 @@
 # Maintainer: Your Name <your@email.com>
 pkgname=arch-manwarn
-pkgver=0.1.0
+pkgver=0.2.0
 pkgrel=1
 pkgdesc="Minimalist pacman hook to warn about Arch News manual interventions"
 arch=('x86_64')
