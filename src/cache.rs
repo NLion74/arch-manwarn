@@ -1,6 +1,6 @@
 use std::fs;
 use std::path::Path;
-use crate::{cache, rss::{self, ManualInterventionResult, NewsEntry}};
+use crate::{rss::{self, ManualInterventionResult}};
 
 fn get_cache_path() -> String {
     std::env::var("ARCH_NEWS_CACHE_PATH")
@@ -11,6 +11,7 @@ fn get_cache_path() -> String {
 pub struct CachedEntry {
     pub title: String,
     pub summary: String,
+    pub link: String,
     pub is_new: bool,
 }
 
@@ -45,6 +46,7 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
         result.entries.iter().map(|entry| CachedEntry {
             title: entry.title.clone(),
             summary: entry.summary.clone(),
+            link: entry.link.clone(),
             is_new: false,
         }).collect()
     };
@@ -56,6 +58,7 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
             new_entries.push(CachedEntry {
                 title: entry.title.clone(),
                 summary: entry.summary.clone(),
+                link: entry.link.clone(),
                 is_new: true,
             });
         }

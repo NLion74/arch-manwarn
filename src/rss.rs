@@ -1,4 +1,3 @@
-use feed_rs::model::{Entry, Text};
 use feed_rs::parser;
 use reqwest::blocking::get;
 use std::io::Read;
@@ -7,6 +6,7 @@ use std::io::Read;
 pub struct NewsEntry {
     pub title: String,
     pub summary: String,
+    pub link: String,
 }
 
 #[derive(Debug)]
@@ -20,6 +20,7 @@ impl Clone for NewsEntry {
         NewsEntry {
             title: self.title.clone(),
             summary: self.summary.clone(),
+            link: self.link.clone(),
         }
     }
 }
@@ -66,10 +67,15 @@ pub fn get_entries() -> Vec<NewsEntry> {
             Some(text) => &text.content,
             None => "[No summary provided]",
         };
+        let link = match entry.links.get(0) {
+            Some(l) => &l.href,
+            None => "https://archlinux.org/news/",
+        };
 
         entries.push(NewsEntry {
             title: title.to_string(),
             summary: summary.to_string(),
+            link: link.to_string(),
         });
     }
 
