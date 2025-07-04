@@ -1,13 +1,29 @@
 # arch-manwarn
 
 Tired of having to check Arch news for manual interventions before every upgrade? This tool is for you.
-**arch-manwarn** is a minimalist utility that checks the Arch news RSS feed for manual intervention warnings and blocks your `pacman` upgrade or install if you need to take action.
+
+**arch-manwarn** is a minimalist utility written in Rust that checks the Arch news RSS feed for manual intervention warnings and blocks your `pacman` upgrade or install if action is needed.
+
+Its small, efficient codebase emphasizes performance and simplicity, staying out of the way unless your attention is truly required.
 
 ## What does it do?
 
 When `pacman` installs or upgrades packages, this tool runs as a **pacman hook**. If it detects any recent news classified as requiring manual intervention, it blocks the pacman transaction and mark the news as read.
 
-On the first run, arch-manwarn assumes you have seen and applied all manual interventions up to that point.
+Once installed, you can verify that the tool is working by running:
+
+```
+arch-manwarn
+```
+
+This should output a short confirmation message.
+
+There are two modes of operation:
+
+-   `arch-manwarn` - shows a short message to confirm installation.
+-   `arch-manwarn check` - used internally by the pacman hook to check for new manual interventions.
+
+    On the first run, arch-manwarn assumes you have already read and handled all previous manual interventions.
 
 It classifies Arch news as requiring manual intervention with the keywords:
 
@@ -26,9 +42,12 @@ sudo pacman -Rns arch-manwarn
 
 # Why this?
 
-I created this project so that I would not miss any manual interventions in the Arch news, but I also did not want to read any Arch news that does not affect me directly. Therefore, this project focuses on minimalism rather than notifying about all news.
+I created this project to avoid missing important manual interventions in the Arch news - without having to read through every news that does not affect me directly.
+Instead of intrusively blocking every `pacman` transaction for every news, **arch-manwarn** filters _only_ those which require manual intervention.
 
-If you want a tool that interrupts for every new Arch news, you may refer to [this project](https://github.com/bradford-smith94/informant), which I found shortly after creating this one. It works similarly but interrupts for every new Arch news.
+It’s written in Rust with a small, efficient codebase that prioritizes **minimalism, performance, and staying out of the way.**
+
+If you’re thinking, _"Why not just alert me for every news post?"_ - you may prefer [this project](https://github.com/bradford-smith94/informant), which I found shortly after creating this one. It works similarly but interrupts for every new Arch news.
 
 # Installation
 

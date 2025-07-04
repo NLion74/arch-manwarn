@@ -8,4 +8,4 @@ Target = *
 Description = Checking Arch news for manual intervention...
 When = PreTransaction
 AbortOnFail
-Exec = /usr/bin/arch-manwarn
+Exec = /usr/bin/arch-manwarn check
