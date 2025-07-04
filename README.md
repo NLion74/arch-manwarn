@@ -57,6 +57,8 @@ Since this package is exclusive to Arch and the pacman package manager, this pac
 
 ## Development
 
+A mirror of the AUR PKGBUILD can be found [here](https://github.com/NLion74/arch-manwarn-aur)
+
 Due to permission issues when running the program manually instead of via the arch-manwarn.hook, you may need to change the cache path from /var/cache. You can do this like so:
 
 ```
