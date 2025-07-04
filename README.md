@@ -49,4 +49,11 @@ ARCH_NEWS_CACHE_PATH=./arch-manwarn-dev.json cargo run
 
 2. Copy binary to `/usr/bin/arch-manwarn`
 
+    ```
+    sudo install -Dm755 target/release/arch-manwarn /usr/bin/arch-manwarn
+    ```
+
 3. Copy `hooks/arch-news-check.hook` to `/etc/pacman.d/hooks/`
+    ```
+    sudo install -Dm644 hooks/arch-manwarn.hook /usr/share/libalpm/hooks/arch-manwarn.hook
+    ```

@@ -8,8 +8,9 @@ fn main() {
         eprintln!("\nManual intervention required for the following Arch news entries:\n");
         for entry in &new_entries {
             eprintln!("- {}", entry.title);
+            eprintln!("  For more details see: {}", entry.link);
         }
-        eprintln!("\nSee https://archlinux.org/news/ for details.");
+        eprintln!("\nAll other news can be found on https://archlinux.org/news/.");
         eprintln!("Arch ManWarn: Exiting to block the upgrade process.\n");
 
         cache::mark_entries_as_seen(&new_entries);
