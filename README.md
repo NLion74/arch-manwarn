@@ -1,13 +1,28 @@
 # arch-manwarn
 
 Tired of having to check Arch news for manual interventions before every upgrade? This tool is for you.
-**arch-manwarn** is a minimalist utility that checks the Arch news RSS feed for manual intervention warnings and blocks your pacman upgrade or install if you need to take action.
+**arch-manwarn** is a minimalist utility that checks the Arch news RSS feed for manual intervention warnings and blocks your `pacman` upgrade or install if you need to take action.
 
 ## What does it do?
 
-When pacman installs or upgrades packages, this program runs as a pacman hook. If it detects any news classified as requiring manual intervention, it will block the pacman transaction and mark the news as read. Originally, it was planned to be interactive, but pacman hooks are not designed for interactive behavior.
+When `pacman` installs or upgrades packages, this tool runs as a **pacman hook**. If it detects any recent news classified as requiring manual intervention, it blocks the pacman transaction and mark the news as read.
 
 On the first run, arch-manwarn assumes you have seen and applied all manual interventions up to that point.
+
+It classifies Arch news as requiring manual intervention with the keywords:
+
+-   `manual intervention`
+-   `action required`
+-   `attention`
+-   `intervention`
+
+Originally, this was planned to be interactive, but pacman hooks are inherently not designed for this behavior.
+
+The **pacman hook** only activates on upgrades or installs therefore if for any reason `arch-manwarn` causes issues with your system or pacman transactions you can always remove it:
+
+```
+sudo pacman -Rns arch-manwarn
+```
 
 # Why this?
 
