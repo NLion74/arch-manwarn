@@ -1,0 +1,68 @@
+.TH ARCH-MANWARN 1 "July 2025" "arch-manwarn 0.5.0" "User Commands"
+.SH NAME
+arch-manwarn \- check Arch Linux news for manual intervention warnings
+.SH SYNOPSIS
+.B arch-manwarn
+.RI [ check ]
+.SH DESCRIPTION
+\fBarch-manwarn\fR is a minimalist utility written in Rust that checks the Arch Linux news RSS feed for posts requiring manual intervention.
+
+It is designed to be used as a pacman hook and will block package upgrades or installs if action is needed.
+
+Its small, efficient codebase emphasizes performance and simplicity, staying out of the way unless your attention is truly required.
+
+On first run, \fBarch-manwarn\fR assumes all existing manual interventions have already been handled.
+
+.SH COMMANDS
+.TP
+.B (no argument)
+Prints a confirmation message to verify installation.
+.TP
+.B check
+Checks the Arch Linux news feed for recent manual interventions. Used internally by the pacman hook.
+
+.SH PACMAN HOOK
+When installed correctly, a pacman hook triggers \fBarch-manwarn check\fR on every upgrade or install.
+
+If a new manual intervention is found, the pacman transaction is blocked and the entry is marked as read.
+
+.SH DETECTION
+A news post is considered a manual intervention if its title or content contains any of the following keywords:
+.IP \[bu] 2
+manual intervention
+.IP \[bu]
+action required
+.IP \[bu]
+attention
+.IP \[bu]
+intervention
+
+.SH FILES
+.TP
+.I /var/cache/arch-manwarn.json
+Stores read status for manual interventions.
+
+.SH ENVIRONMENT
+.TP
+.B ARCH_NEWS_CACHE_PATH
+Overrides the default path to the JSON cache file.
+
+.SH EXAMPLES
+.TP
+.B arch-manwarn
+Prints a confirmation message.
+.TP
+.B arch-manwarn check
+Checks for manual interventions. Used by pacman hook.
+
+.SH SEE ALSO
+pacman(8), curl(1)
+
+.SH AUTHOR
+Written by NLion74 <https://nlion.nl/>.
+
+.SH LICENSE
+UNLICENSE.
+
+.SH VERSION
+arch-manwarn 0.5.0
