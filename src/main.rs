@@ -23,8 +23,6 @@ fn main() {
                 eprintln!("\nAll other news can be found on https://archlinux.org/news/.");
                 eprintln!("Arch ManWarn: Exiting to block the upgrade process.\n");
 
-                cache::mark_entries_as_seen(&new_entries);
-
                 std::process::exit(1);
             }
         }
