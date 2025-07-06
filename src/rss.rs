@@ -46,34 +46,25 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
 
 pub fn get_entries() -> Vec<NewsEntry> {
     let mut content = String::new();
-    get("https://archlinux.org/feeds/news/")
-        .expect("Failed to fetch RSS feed")
-        .read_to_string(&mut content)
-        .expect("Failed to read feed content");
+    if let Ok(mut response) = get("https://archlinux.org/feeds/news/") {
+        if response.read_to_string(&mut content).is_ok() {
+            if let Ok(feed) = parser::parse(content.as_bytes()) {
+                let mut entries = Vec::new();
+                for entry in feed.entries {
+                    let title = entry.title.as_ref().map_or("[No title provided]", |t| &t.content);
+                    let summary = entry.summary.as_ref().map_or("[No summary provided]", |s| &s.content);
+                    let link = entry.links.get(0).map_or("https://archlinux.org/news/", |l| &l.href);
 
-    let feed = parser::parse(content.as_bytes()).expect("Failed to parse feed");
-
-    let mut entries = Vec::new();
-    for entry in feed.entries {
-        let title = match &entry.title {
-            Some(text) => &text.content,
-            None => "[No title provided]",
-        };
-        let summary = match &entry.summary {
-            Some(text) => &text.content,
-            None => "[No summary provided]",
-        };
-        let link = match entry.links.get(0) {
-            Some(l) => &l.href,
-            None => "https://archlinux.org/news/",
-        };
-
-        entries.push(NewsEntry {
-            title: title.to_string(),
-            summary: summary.to_string(),
-            link: link.to_string(),
-        });
+                    entries.push(NewsEntry {
+                        title: title.to_string(),
+                        summary: summary.to_string(),
+                        link: link.to_string(),
+                    });
+                }
+                return entries;
+            }
+        }
     }
 
-    entries
+    Vec::new() // return empty if any step fails
 }
