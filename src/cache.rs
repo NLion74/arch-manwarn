@@ -1,17 +1,28 @@
 use std::fs;
 use std::path::Path;
 use crate::{rss::{self, ManualInterventionResult}};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 fn get_cache_path() -> String {
     std::env::var("ARCH_NEWS_CACHE_PATH")
         .unwrap_or_else(|_| "/var/cache/arch-manwarn/last_seen_entries.json".to_string())
 }
 
+
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct CachedEntry {
     pub title: String,
     pub summary: String,
     pub link: String,
+    pub first_seen: i64,
+    pub last_seen: i64,
+}
+
+fn current_unix_time() -> i64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .expect("Time went backwards")
+        .as_secs() as i64
 }
 
 fn save_cache(cache_path: &str, entries: &[CachedEntry]) {
@@ -42,8 +53,8 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
     };
 
     let mut new_entries = Vec::new();
-
     let mut cache_changed = false;
+    let now = current_unix_time();
 
     for entry in &result.entries {
         // Compare the title of the new entry with cached entries
@@ -54,11 +65,36 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
                 title: entry.title.clone(),
                 summary: entry.summary.clone(),
                 link: entry.link.clone(),
+                first_seen: now,
+                last_seen: now,
             };
             new_entries.push(new.clone());
             cached_entries.push(new);
             cache_changed = true;
+        } else {
+            // If the entry already exists in the cache,
+            // update its last_seen timestamp
+            if let Some(cached_entry) = cached_entries.iter_mut().find(|e| e.title == entry.title) {
+                cached_entry.last_seen = now;
+                cache_changed = true;
+            }
         }
+    }
+
+    // Retain only cached entries that are not over 60 days old
+    // and have not been seen in the feed entries in the last 30 days
+    let prune_threshold_missing = now - 30 * 24 * 3600;
+    let prune_threshold_age = now - 60 * 24 * 3600;
+
+    let before_len = cached_entries.len();
+
+    cached_entries.retain(|e| {
+        // Keep entries unless both conditions to prune are met
+        !(e.last_seen < prune_threshold_missing && e.first_seen < prune_threshold_age)
+    });
+
+    if cached_entries.len() != before_len {
+        cache_changed = true;
     }
 
     // If updated, save the cache
