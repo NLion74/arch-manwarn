@@ -8,6 +8,7 @@ fn get_cache_path() -> String {
         .unwrap_or_else(|_| "/var/cache/arch-manwarn/last_seen_entries.json".to_string())
 }
 
+const CACHE_VERSION: u32 = 1;
 
 #[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 pub struct CachedEntry {
@@ -18,6 +19,14 @@ pub struct CachedEntry {
     pub last_seen: i64,
 }
 
+#[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]
+
+pub struct CacheFile {
+    pub entries: Vec<CachedEntry>,
+    pub cache_version: u32,
+}
+
+
 fn current_unix_time() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
@@ -25,13 +34,13 @@ fn current_unix_time() -> i64 {
         .as_secs() as i64
 }
 
-fn save_cache(cache_path: &str, entries: &[CachedEntry]) {
-    if let Some(parent) = Path::new(cache_path).parent() {
+fn save_cache(cache_path: String, cache_file: CacheFile) {
+    if let Some(parent) = Path::new(&cache_path).parent() {
         if let Err(e) = fs::create_dir_all(parent) {
             eprintln!("Failed to create cache directory {:?}: {}", parent, e);
         }
     }
-    if let Err(e) = fs::write(cache_path, serde_json::to_string_pretty(entries).unwrap()) {
+    if let Err(e) = fs::write(&cache_path, serde_json::to_string_pretty(&cache_file).unwrap()) {
         eprintln!("Failed to write cache file {}: {}", cache_path, e);
         eprintln!("Try running the program as root or with sudo if you want to use /var/cache.");
     }
@@ -43,14 +52,31 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
 
     // Determining whether this is the first run
     // by checking if the cache file exists
-    let first_run = !Path::new(&cache_path).exists();
+    let mut first_run = !Path::new(&cache_path).exists();
 
     // Load previously cached entries
-    let mut cached_entries: Vec<CachedEntry> = if let Ok(data) = fs::read_to_string(&cache_path) {
+    let mut cache_file: CacheFile = if let Ok(data) = fs::read_to_string(&cache_path) {
         serde_json::from_str(&data).unwrap_or_default()
     } else {
-        Vec::new()
+        CacheFile {
+            entries: Vec::new(),
+            cache_version: CACHE_VERSION,
+        }
     };
+
+    // Ensure the cache version is correct
+    if cache_file.cache_version != CACHE_VERSION {
+        eprintln!("Cache version mismatch. Resetting cache.");
+        cache_file = CacheFile {
+            entries: Vec::new(),
+            cache_version: CACHE_VERSION,
+        };
+        first_run = true; // Treat as first run if cache version is reset
+    }
+
+    // Create a mutable reference to the entries vector
+    // to avoid confusion with the cache_file variable
+    let cached_entries = &mut cache_file.entries;
 
     let mut new_entries = Vec::new();
     let mut cache_changed = false;
@@ -99,7 +125,7 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
 
     // If updated, save the cache
     if cache_changed {
-        save_cache(&cache_path, &cached_entries);
+        save_cache(cache_path, cache_file);
     }
 
     // If this is the first run, return an empty vector
