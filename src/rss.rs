@@ -11,7 +11,6 @@ pub struct NewsEntry {
 
 #[derive(Debug)]
 pub struct ManualInterventionResult {
-    pub found: bool,
     pub entries: Vec<NewsEntry>,
 }
 
@@ -40,10 +39,7 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
         }
     }
 
-    let found = !found_entries.is_empty();
-
     ManualInterventionResult {
-        found,
         entries: found_entries,
     }
 }

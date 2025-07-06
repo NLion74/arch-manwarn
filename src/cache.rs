@@ -30,7 +30,11 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
     let result: ManualInterventionResult = rss::check_for_manual_intervention();
     let cache_path = get_cache_path();
 
-    // Load previously seen entries
+    // Determining whether this is the first run
+    // by checking if the cache file exists
+    let first_run = !Path::new(&cache_path).exists();
+
+    // Load previously cached entries
     let mut cached_entries: Vec<CachedEntry> = if let Ok(data) = fs::read_to_string(&cache_path) {
         serde_json::from_str(&data).unwrap_or_default()
     } else {
@@ -42,8 +46,8 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
     let mut cache_changed = false;
 
     for entry in &result.entries {
+        // Compare the title of the new entry with cached entries
         if !cached_entries.iter().any(|e| e.title == entry.title) {
-            // New uncached entry
             let new = CachedEntry {
                 title: entry.title.clone(),
                 summary: entry.summary.clone(),
@@ -55,10 +59,10 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
         }
     }
 
-    // If updated save the cache
+    // If updated, save the cache
     if cache_changed {
         save_cache(&cache_path, &cached_entries);
     }
 
-    new_entries
+    if first_run { Vec::new() } else { new_entries }
 }
