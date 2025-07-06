@@ -47,6 +47,8 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
 
     for entry in &result.entries {
         // Compare the title of the new entry with cached entries
+        // If the title is not found in cached entries, push it
+        // to new_entries and cached_entries
         if !cached_entries.iter().any(|e| e.title == entry.title) {
             let new = CachedEntry {
                 title: entry.title.clone(),
@@ -64,5 +66,7 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
         save_cache(&cache_path, &cached_entries);
     }
 
+    // If this is the first run, return an empty vector
+    // Otherwise, return the new entries found
     if first_run { Vec::new() } else { new_entries }
 }
