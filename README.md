@@ -101,9 +101,6 @@ warn_only = false
 
 # Where to store the entries cache file
 cache_path = "/var/cache/arch-manwarn.json"
-
-# Internal config version for possible future migrations — do not change
-config_version = 1
 ```
 
 ## Development

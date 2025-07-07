@@ -5,8 +5,6 @@ use std::path::{Path, PathBuf};
 use lazy_static::lazy_static;
 use std::env;
 
-const CONFIG_VERSION: u32 = 1;
-
 pub fn config_path() -> PathBuf {
     // For development: ARCH_MANWARN_CONFIG=/path/to/custom/config.toml
     if let Ok(env_path) = env::var("ARCH_MANWARN_CONFIG") {
@@ -50,16 +48,11 @@ pub struct Config {
 
     /// Path where cache is stored
     pub cache_path: String,
-
-    /// Internal config version for handling upgrades
-    /// Not used as of now but could be helpful for future migrations
-    pub config_version: u32,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            config_version: CONFIG_VERSION,
             cache_path: "/var/cache/arch-manwarn.json".to_string(),
             rss_feed_url: "https://archlinux.org/feeds/news/".to_string(),
             keywords: vec!["manual intervention".to_string(),
@@ -84,13 +77,6 @@ impl Config {
 
         let config: Config = toml::from_str(&content)
             .map_err(|e| format!("Failed to parse config file: {e}"))?;
-
-        if config.config_version != CONFIG_VERSION {
-            return Err(format!(
-                "Config version mismatch: expected {}, found {}",
-                CONFIG_VERSION, config.config_version
-            ));
-        }
 
         let updated = toml::to_string_pretty(&config)
             .map_err(|e| format!("Failed to serialize updated config: {e}"))?;
