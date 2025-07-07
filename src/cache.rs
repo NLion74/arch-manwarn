@@ -98,7 +98,9 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
                 last_seen: now,
             };
             new_entries.push(new.clone());
-            cached_entries.push(new);
+            if CONFIG.mark_as_read_automatically {
+                cached_entries.push(new);
+            }
             cache_changed = true;
         } else {
             // If the entry already exists in the cache,

@@ -7,10 +7,6 @@ fn main() {
     let mut args = std::env::args();
     let _exe = args.next();
 
-    // Debug
-    // REMOVE BEFORE MERGING INTO MAIN
-    println!("{:#?}", *CONFIG);
-
     match args.next().as_deref() {
         None => {
             println!("arch-manwarn is installed and should block any pacman transactions before manual intervention is required!\n\
@@ -34,9 +30,13 @@ fn main() {
                     }
                 }
                 eprintln!("\nAll other news can be found on https://archlinux.org/news/.");
-                eprintln!("Arch ManWarn: Exiting to block the upgrade process.\n");
 
-                std::process::exit(1);
+                if CONFIG.warn_only {
+                    eprintln!("Arch ManWarn: Warning only mode is enabled — not blocking upgrade.\n");
+                } else {
+                    eprintln!("Arch ManWarn: Exiting to block the upgrade process.\n");
+                    std::process::exit(1);
+                }
             }
         }
 

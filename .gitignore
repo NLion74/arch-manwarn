@@ -2,5 +2,6 @@
 /pkg
 
 # Ignore local save for development
-arch-manwarn-dev.json
+arch-manwarn-cache.json
 arch-manwarn-config.toml
+arch-manwarn-dev.json

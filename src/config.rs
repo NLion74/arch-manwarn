@@ -42,7 +42,6 @@ pub struct Config {
     pub show_summary: bool,
 
     /// Whether to automatically mark as read after blocking
-    /// TODO: Implement this properly
     pub mark_as_read_automatically: bool,
 
     /// Whether to just warn (don’t block transaction)
@@ -121,6 +120,9 @@ impl Config {
     }
 
     pub fn save(&self, path: &Path) -> io::Result<()> {
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent)?;
+        }
         let serialized = toml::to_string_pretty(&self).expect("Failed to serialize config");
         fs::write(path, serialized)
     }

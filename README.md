@@ -25,7 +25,7 @@ There are two modes of operation:
 
     On the first run, arch-manwarn assumes you have already read and handled all previous manual interventions.
 
-It classifies Arch news as requiring manual intervention with the keywords:
+By default it classifies Arch news as requiring manual intervention with the keywords:
 
 -   `manual intervention`
 -   `action required`
@@ -55,6 +55,57 @@ If you’re thinking, _"Why not just alert me for every news post?"_ - you may p
 
 Since this package is exclusive to Arch and the pacman package manager, this package is only available to be installed from my [AUR Package](https://aur.archlinux.org/packages/arch-manwarn).
 
+## Configuration
+
+`arch-manwarn` is configured using a TOML file that is initiated with default options. It allows users to customize behavior such as cache location, keyword matching, pruning policy, and warning behavior.
+
+By default, the config file is located at: `/etc/arch-manwarn/config.toml`
+
+You can override this path using the `ARCH_MANWARN_CONFIG` environment variable:
+
+```
+export ARCH_MANWARN_CONFIG=/path/to/your/config.toml
+```
+
+Example `config.toml` with default options
+
+```
+# List of keywords to match in news entry titles
+keywords = ["manual intervention", "action required", "attention", "intervention"]
+
+# If true, show *all* news entries regardless of keywords
+match_all_entries = false
+
+# Ignore news entries containing any of these keywords in either title or summary
+ignored_keywords = []
+
+# Both of these conditions must be met to prune a cached news entry:
+# 1. It has not been seen in the RSS feed for `prune_missing_days`, AND
+# 2. It is older than `prune_age_days`.
+# This avoids removing entries that may temporarily disappear from the feed.
+prune_missing_days = 30
+prune_age_days = 60
+
+
+# URL of the RSS feed (defaults to Arch Linux's official news)
+rss_feed_url = "https://archlinux.org/feeds/news/"
+
+# If true, also display the summary for each news entry
+show_summary = false
+
+# If true, automatically mark entries as read after displaying them
+mark_as_read_automatically = true
+
+# If true, **warn only** without blocking upgrades (exit code 0)
+warn_only = false
+
+# Where to store the entries cache file
+cache_path = "/var/cache/arch-manwarn.json"
+
+# Internal config version for possible future migrations — do not change
+config_version = 1
+```
+
 ## Development
 
 A mirror of the AUR PKGBUILD can be found [here](https://github.com/NLion74/arch-manwarn-aur)
@@ -62,7 +113,9 @@ A mirror of the AUR PKGBUILD can be found [here](https://github.com/NLion74/arch
 Due to permission issues when running the program manually instead of via the arch-manwarn.hook, you may need to change the cache path from /var/cache. You can do this like so:
 
 ```
-ARCH_NEWS_CACHE_PATH=./arch-manwarn-dev.json cargo run
+
+ARCH_NEWS_CACHE_PATH=./arch-manwarn-cache.json ARCH_MANWARN_CONFIG=./arch-manwarn-config.toml cargo run
+
 ```
 
 1. Build the release binary:
@@ -78,3 +131,7 @@ ARCH_NEWS_CACHE_PATH=./arch-manwarn-dev.json cargo run
     ```
     sudo install -Dm644 hooks/arch-manwarn.hook /usr/share/libalpm/hooks/arch-manwarn.hook
     ```
+
+```
+
+```

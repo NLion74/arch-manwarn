@@ -48,8 +48,6 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
         .collect::<Vec<String>>();
     let mut found_entries = Vec::new();
 
-    println!("{:#?}", &CONFIG.ignored_keywords);
-
     if !CONFIG.match_all_entries {
         for entry in &entries {
             let text = format!("{}", entry.title.to_lowercase());
