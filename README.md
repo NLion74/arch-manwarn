@@ -130,7 +130,3 @@ ARCH_NEWS_CACHE_PATH=./arch-manwarn-cache.json ARCH_MANWARN_CONFIG=./arch-manwar
     ```
     sudo install -Dm644 hooks/arch-manwarn.hook /usr/share/libalpm/hooks/arch-manwarn.hook
     ```
-
-```
-
-```
