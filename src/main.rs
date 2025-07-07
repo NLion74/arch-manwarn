@@ -7,6 +7,8 @@ fn main() {
     let mut args = std::env::args();
     let _exe = args.next();
 
+    // Debug
+    // REMOVE BEFORE MERGING INTO MAIN
     println!("{:#?}", *CONFIG);
 
     match args.next().as_deref() {
@@ -20,9 +22,16 @@ fn main() {
             let new_entries = cache::check_new_entries();
             if !new_entries.is_empty() {
                 eprintln!("\nManual intervention required for the following Arch news entries:\n");
-                for entry in &new_entries {
+                if !CONFIG.show_summary {
+                    for entry in &new_entries {
                     eprintln!("- {}", entry.title);
                     eprintln!("  For more details see: {}", entry.link);
+                    }
+                } else {
+                    for entry in &new_entries {
+                        eprintln!("- {}", entry.title);
+                        eprintln!("\nSummary: \n{}", entry.summary)
+                    }
                 }
                 eprintln!("\nAll other news can be found on https://archlinux.org/news/.");
                 eprintln!("Arch ManWarn: Exiting to block the upgrade process.\n");

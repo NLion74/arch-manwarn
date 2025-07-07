@@ -22,26 +22,58 @@ pub fn config_path() -> PathBuf {
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
-    pub version: u32,
-    pub cache_path: String,
-    pub rss_feed_url: String,
+    /// Keywords to search for in news entries
     pub keywords: Vec<String>,
-    pub ignore_keywords: Vec<String>,
+
+    /// Whether to include all news entries, not just those with keywords
+    pub match_all_entries: bool,
+
+    /// Ignore these keywords explicitly
+    pub ignored_keywords: Vec<String>,
+
+    /// Number of days to retain cache
     pub prune_missing_days: u64,
     pub prune_age_days: u64,
+
+    /// URL for the RSS feed
+    pub rss_feed_url: String,
+
+    /// Whether to show summary of changes
+    pub show_summary: bool,
+
+    /// Whether to automatically mark as read after blocking
+    /// TODO: Implement this properly
+    pub mark_as_read_automatically: bool,
+
+    /// Whether to just warn (don’t block transaction)
+    /// TODO: Implement this properly
+    pub warn_only: bool,
+
+    /// Path where cache is stored
+    pub cache_path: String,
+
+    /// Internal config version for handling upgrades
+    /// Not used as of now but could be helpful for future migrations
+    pub config_version: u32,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
-            version: CONFIG_VERSION,
+            config_version: CONFIG_VERSION,
             cache_path: "/var/cache/arch-manwarn.json".to_string(),
             rss_feed_url: "https://archlinux.org/feeds/news/".to_string(),
-            keywords: vec!["manual intervention".to_string(), "action required".to_string(),
-                           "attention".to_string(), "intervention".to_string()],
-            ignore_keywords: vec![],
+            keywords: vec!["manual intervention".to_string(),
+                            "action required".to_string(),
+                            "attention".to_string(),
+                            "intervention".to_string()],
+            ignored_keywords: vec![],
             prune_missing_days: 30,
             prune_age_days: 60,
+            match_all_entries: false,
+            show_summary: false,
+            mark_as_read_automatically: true,
+            warn_only: false,
         }
     }
 }
@@ -51,13 +83,13 @@ impl Config {
         let content = fs::read_to_string(path)
             .map_err(|e| format!("Failed to read config file: {e}"))?;
 
-        let mut config: Config = toml::from_str(&content)
+        let config: Config = toml::from_str(&content)
             .map_err(|e| format!("Failed to parse config file: {e}"))?;
 
-        if config.version != CONFIG_VERSION {
+        if config.config_version != CONFIG_VERSION {
             return Err(format!(
                 "Config version mismatch: expected {}, found {}",
-                CONFIG_VERSION, config.version
+                CONFIG_VERSION, config.config_version
             ));
         }
 
