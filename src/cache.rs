@@ -2,6 +2,7 @@ use std::fs;
 use std::path::Path;
 use crate::{rss::{self, ManualInterventionResult}};
 use std::time::{SystemTime, UNIX_EPOCH};
+use crate::config::CONFIG;
 
 fn get_cache_path() -> String {
     std::env::var("ARCH_NEWS_CACHE_PATH")

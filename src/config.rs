@@ -1,0 +1,99 @@
+use serde::{Deserialize, Serialize};
+use std::fs;
+use std::io;
+use std::path::{Path, PathBuf};
+use lazy_static::lazy_static;
+use std::env;
+
+const CONFIG_VERSION: u32 = 1;
+
+pub fn config_path() -> PathBuf {
+    // For development: ARCH_MANWARN_CONFIG=/path/to/custom/config.toml
+    if let Ok(env_path) = env::var("ARCH_MANWARN_CONFIG") {
+        return PathBuf::from(env_path);
+    }
+
+    // Hardcoded fallback for production use
+    // default to /etc/arch-manwarn/config.toml
+    // Because pacman hooks run as root
+    PathBuf::from("/etc/arch-manwarn/config.toml")
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Config {
+    pub version: u32,
+    pub cache_path: String,
+    pub rss_feed_url: String,
+    pub keywords: Vec<String>,
+    pub ignore_keywords: Vec<String>,
+    pub prune_missing_days: u64,
+    pub prune_age_days: u64,
+}
+
+impl Default for Config {
+    fn default() -> Self {
+        Self {
+            version: CONFIG_VERSION,
+            cache_path: "/var/cache/arch-manwarn.json".to_string(),
+            rss_feed_url: "https://archlinux.org/feeds/news/".to_string(),
+            keywords: vec!["manual intervention".to_string(), "action required".to_string(),
+                           "attention".to_string(), "intervention".to_string()],
+            ignore_keywords: vec![],
+            prune_missing_days: 30,
+            prune_age_days: 60,
+        }
+    }
+}
+
+impl Config {
+    pub fn load_from_file(path: &Path) -> Result<Self, String> {
+        let content = fs::read_to_string(path)
+            .map_err(|e| format!("Failed to read config file: {e}"))?;
+
+        let mut config: Config = toml::from_str(&content)
+            .map_err(|e| format!("Failed to parse config file: {e}"))?;
+
+        if config.version != CONFIG_VERSION {
+            return Err(format!(
+                "Config version mismatch: expected {}, found {}",
+                CONFIG_VERSION, config.version
+            ));
+        }
+
+        let updated = toml::to_string_pretty(&config)
+            .map_err(|e| format!("Failed to serialize updated config: {e}"))?;
+        fs::write(path, updated)
+            .map_err(|e| format!("Failed to write updated config: {e}"))?;
+
+        Ok(config)
+    }
+
+    pub fn load() -> Self {
+        let path = config_path();
+
+        match Self::load_from_file(&path) {
+            Ok(config) => config,
+            Err(e) => {
+                eprintln!("[arch-manwarn] Config error: {e}");
+                eprintln!("[arch-manwarn] Using default config and regenerating...");
+
+                let default = Config::default();
+                if let Err(write_err) = default.save(&path) {
+                    eprintln!("[arch-manwarn] Failed to write default config: {write_err}");
+                }
+
+                default
+            }
+        }
+    }
+
+    pub fn save(&self, path: &Path) -> io::Result<()> {
+        let serialized = toml::to_string_pretty(&self).expect("Failed to serialize config");
+        fs::write(path, serialized)
+    }
+}
+
+lazy_static! {
+    pub static ref CONFIG: Config = Config::load();
+}

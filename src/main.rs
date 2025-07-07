@@ -1,9 +1,13 @@
 mod rss;
 mod cache;
+mod config;
+use crate::config::CONFIG;
 
 fn main() {
     let mut args = std::env::args();
     let _exe = args.next();
+
+    println!("{:#?}", *CONFIG);
 
     match args.next().as_deref() {
         None => {
