@@ -2,10 +2,13 @@ use std::fs;
 use std::path::Path;
 use crate::{rss::{self, ManualInterventionResult}};
 use std::time::{SystemTime, UNIX_EPOCH};
+use crate::config::CONFIG;
 
 fn get_cache_path() -> String {
     std::env::var("ARCH_NEWS_CACHE_PATH")
-        .unwrap_or_else(|_| "/var/cache/arch-manwarn/last_seen_entries.json".to_string())
+        .ok()
+        .or_else(|| Some(CONFIG.cache_path.clone()))
+        .unwrap_or_else(|| "/var/cache/arch-manwarn/last_seen_entries.json".to_string())
 }
 
 const CACHE_VERSION: u32 = 1;
@@ -95,7 +98,9 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
                 last_seen: now,
             };
             new_entries.push(new.clone());
-            cached_entries.push(new);
+            if CONFIG.mark_as_read_automatically {
+                cached_entries.push(new);
+            }
             cache_changed = true;
         } else {
             // If the entry already exists in the cache,
@@ -107,10 +112,10 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
         }
     }
 
-    // Retain only cached entries that are not over 60 days old
-    // and have not been seen in the feed entries in the last 30 days
-    let prune_threshold_missing = now - 30 * 24 * 3600;
-    let prune_threshold_age = now - 60 * 24 * 3600;
+    // Retain only cached entries that are not over CONFIG.prune_missing_days old
+    // and have not been seen in the feed entries in the last CONFIG.prune_age_days days
+    let prune_threshold_missing = now - (CONFIG.prune_missing_days as i64) * 24 * 3600;
+    let prune_threshold_age = now - (CONFIG.prune_age_days as i64) * 24 * 3600;
 
     let before_len = cached_entries.len();
 
