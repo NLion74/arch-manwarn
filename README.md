@@ -103,7 +103,7 @@ warn_only = false
 cache_path = "/var/cache/arch-manwarn.json"
 ```
 
-## Development
+# Development
 
 A mirror of the AUR PKGBUILD can be found [here](https://github.com/NLion74/arch-manwarn-aur)
 
