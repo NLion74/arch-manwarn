@@ -18,10 +18,12 @@ arch-manwarn
 
 This should output a short confirmation message.
 
-There are two modes of operation:
+There are 4 modes of operation:
 
 -   `arch-manwarn` - shows a short message to confirm installation.
 -   `arch-manwarn check` - used internally by the pacman hook to check for new manual interventions.
+-   `arch-manwarn status` - Shows a summary of cached manual interventions, including how long ago they were first and last seen.
+-   `arch-manwarn read` - Manually marks all unread items as read (usually not needed unless configuration is adjusted).
 
     On the first run, arch-manwarn assumes you have already read and handled all previous manual interventions.
 

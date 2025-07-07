@@ -5,6 +5,7 @@ use std::path::{Path, PathBuf};
 use lazy_static::lazy_static;
 use std::env;
 
+
 pub fn config_path() -> PathBuf {
     // For development: ARCH_MANWARN_CONFIG=/path/to/custom/config.toml
     if let Ok(env_path) = env::var("ARCH_MANWARN_CONFIG") {

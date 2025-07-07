@@ -4,7 +4,7 @@ use crate::{rss::{self, ManualInterventionResult}};
 use std::time::{SystemTime, UNIX_EPOCH};
 use crate::config::CONFIG;
 
-fn get_cache_path() -> String {
+pub fn get_cache_path() -> String {
     std::env::var("ARCH_NEWS_CACHE_PATH")
         .ok()
         .or_else(|| Some(CONFIG.cache_path.clone()))
@@ -30,7 +30,7 @@ pub struct CacheFile {
 }
 
 
-fn current_unix_time() -> i64 {
+pub fn current_unix_time() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .expect("Time went backwards")
@@ -49,16 +49,9 @@ fn save_cache(cache_path: String, cache_file: CacheFile) {
     }
 }
 
-pub fn check_new_entries() -> Vec<CachedEntry> {
-    let result: ManualInterventionResult = rss::check_for_manual_intervention();
-    let cache_path = get_cache_path();
-
-    // Determining whether this is the first run
-    // by checking if the cache file exists
-    let mut first_run = !Path::new(&cache_path).exists();
-
+pub fn load_cache(cache_path: &str) -> CacheFile {
     // Load previously cached entries
-    let mut cache_file: CacheFile = if let Ok(data) = fs::read_to_string(&cache_path) {
+    let cache_file: CacheFile = if let Ok(data) = fs::read_to_string(&cache_path) {
         serde_json::from_str(&data).unwrap_or_default()
     } else {
         CacheFile {
@@ -66,6 +59,19 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
             cache_version: CACHE_VERSION,
         }
     };
+
+    cache_file
+}
+
+pub fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
+    let result: ManualInterventionResult = rss::check_for_manual_intervention();
+    let cache_path = get_cache_path();
+
+    // Determining whether this is the first run
+    // by checking if the cache file exists
+    let mut first_run = !Path::new(&cache_path).exists();
+
+    let mut cache_file = load_cache(&cache_path);
 
     // Ensure the cache version is correct
     if cache_file.cache_version != CACHE_VERSION {
@@ -98,7 +104,7 @@ pub fn check_new_entries() -> Vec<CachedEntry> {
                 last_seen: now,
             };
             new_entries.push(new.clone());
-            if CONFIG.mark_as_read_automatically {
+            if CONFIG.mark_as_read_automatically || force_mark_as_read {
                 cached_entries.push(new);
             }
             cache_changed = true;
