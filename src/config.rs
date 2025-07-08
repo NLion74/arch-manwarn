@@ -62,10 +62,7 @@ impl Default for Config {
         Self {
             cache_path: "/var/cache/arch-manwarn.json".to_string(),
             rss_feed_url: "https://archlinux.org/feeds/news/".to_string(),
-            keywords: vec!["manual intervention".to_string(),
-                            "action required".to_string(),
-                            "attention".to_string(),
-                            "intervention".to_string()],
+            keywords: vec!["manual intervention".to_string()],
             ignored_keywords: vec![],
             include_summary_in_query: true,
             prune_missing_days: 30,
