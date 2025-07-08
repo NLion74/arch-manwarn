@@ -30,6 +30,11 @@ pub struct Config {
     /// Ignore these keywords explicitly
     pub ignored_keywords: Vec<String>,
 
+    /// Whether to include summary in query of keywords
+    /// If true, the summary will be included in the search for keywords
+    /// If false, only the title will be searched
+    pub include_summary_in_query: bool,
+
     /// Number of days to retain cache
     pub prune_missing_days: u64,
     pub prune_age_days: u64,
@@ -37,7 +42,8 @@ pub struct Config {
     /// URL for the RSS feed
     pub rss_feed_url: String,
 
-    /// Whether to show summary of changes
+    /// Whether to show summary on check
+    /// If false, only title and link will be shown
     pub show_summary: bool,
 
     /// Whether to automatically mark as read after blocking
@@ -61,6 +67,7 @@ impl Default for Config {
                             "attention".to_string(),
                             "intervention".to_string()],
             ignored_keywords: vec![],
+            include_summary_in_query: true,
             prune_missing_days: 30,
             prune_age_days: 60,
             match_all_entries: false,
