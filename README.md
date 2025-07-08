@@ -27,12 +27,12 @@ There are 4 modes of operation:
 
     On the first run, arch-manwarn assumes you have already read and handled all previous manual interventions.
 
-By default it classifies Arch news as requiring manual intervention with the keywords:
+arch-manwarn flags news containing "manual intervention" (case-insensitive) as requiring action.
+You can customize keywords in ~/.config/arch-manwarn/config.toml:
 
--   `manual intervention`
--   `action required`
--   `attention`
--   `intervention`
+```
+keywords = ["manual intervention", "breaking change"]
+```
 
 Originally, this was planned to be interactive, but pacman hooks are inherently not designed for this behavior.
 
@@ -73,7 +73,7 @@ Example `config.toml` with default options
 
 ```
 # List of keywords to match in news entry titles
-keywords = ["manual intervention", "action required", "attention", "intervention"]
+keywords = ["manual intervention",]
 
 # If true, show *all* news entries regardless of keywords
 match_all_entries = false
