@@ -29,10 +29,17 @@ impl Clone for NewsEntry {
 pub fn ignored_keywords(entry: &NewsEntry) -> bool {
     for keyword in &CONFIG.ignored_keywords {
         let keyword = keyword.to_lowercase();
-        if entry.title.to_lowercase().contains(&keyword)
-            || entry.summary.to_lowercase().contains(&keyword)
-        {
+        let title_lower = entry.title.to_lowercase();
+
+        if title_lower.contains(&keyword) {
             return true;
+        }
+
+        if CONFIG.include_summary_in_query {
+            let summary_lower = entry.summary.to_lowercase();
+            if summary_lower.contains(&keyword) {
+                return true;
+            }
         }
     }
     false
@@ -50,7 +57,10 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
 
     if !CONFIG.match_all_entries {
         for entry in &entries {
-            let text = format!("{}", entry.title.to_lowercase());
+            let mut text = format!("{}", entry.title.to_lowercase());
+            if CONFIG.include_summary_in_query {
+                text.push_str(&format!(" {}", entry.summary.to_lowercase()));
+            }
             if keywords.iter().any(|kw| text.contains(kw)) {
                 if !ignored_keywords(entry) {
                     found_entries.push(entry.clone());

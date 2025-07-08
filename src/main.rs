@@ -54,7 +54,7 @@ fn main() {
 
         Some("status") => {
             let cache_path = cache::get_cache_path();
-            let Ok(data) = std::fs::read_to_string(&cache_path) else {
+            let Ok(_data) = std::fs::read_to_string(&cache_path) else {
                 println!("📭 No cache found. Run `arch-manwarn check` first.");
                 return;
             };

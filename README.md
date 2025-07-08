@@ -81,6 +81,11 @@ match_all_entries = false
 # Ignore news entries containing any of these keywords in either title or summary
 ignored_keywords = []
 
+# Whether to include summary in query of keywords
+# If true, the summary will be included in the search for keywords
+# If false, only the title will be searched
+include_summary_in_query=true
+
 # Both of these conditions must be met to prune a cached news entry:
 # 1. It has not been seen in the RSS feed for `prune_missing_days`, AND
 # 2. It is older than `prune_age_days`.
