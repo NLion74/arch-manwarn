@@ -9,9 +9,14 @@ fn main() {
 
     match args.next().as_deref() {
         None => {
-            println!("arch-manwarn is installed and should block any pacman transactions before manual intervention is required!\n\
-                      Usage:\n\
-                      arch-manwarn check   # Check for manual intervention (default pacman hook behavior may not work with user privileges)\n");
+            println!(
+                "arch-manwarn is installed as a pacman hook to check for manual interventions in Arch Linux news.\n\
+                 There are 4 modes of operation:\n\n\
+                 arch-manwarn            - Shows this short message to confirm installation.\n\
+                 arch-manwarn check      - Used internally by the pacman hook to check for new manual interventions.\n\
+                 arch-manwarn status     - Shows a summary of cached manual interventions, including how long ago they were first and last seen.\n\
+                 arch-manwarn read       - Manually marks all unread items as read (usually not needed unless configuration is adjusted).\n"
+            );
         }
 
         Some("check") => {
