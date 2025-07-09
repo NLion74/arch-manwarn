@@ -4,6 +4,7 @@ use futures::future::join_all;
 use reqwest::Client;
 use feed_rs::parser;
 use std::time::Duration;
+use std::time::SystemTime;
 
 #[derive(Debug, Clone)]
 pub struct NewsEntry {
@@ -15,6 +16,7 @@ pub struct NewsEntry {
 #[derive(Debug)]
 pub struct ManualInterventionResult {
     pub entries: Vec<NewsEntry>,
+    pub last_successful_request: Option<std::time::SystemTime>,
 }
 
 pub fn ignored_keywords(entry: &NewsEntry) -> bool {
@@ -38,6 +40,7 @@ pub fn ignored_keywords(entry: &NewsEntry) -> bool {
 
 pub async fn check_for_manual_intervention() -> ManualInterventionResult {
     // This gives us a vector of NewsEntry structs from the archlinux.org RSS feed
+    let start_time = SystemTime::now();
     let entries = get_entries_from_feeds();
 
     // Check for entries with keywords that indicate manual intervention
@@ -71,8 +74,15 @@ pub async fn check_for_manual_intervention() -> ManualInterventionResult {
         }
     }
 
+    let last_successful_request = if !entries.is_empty() {
+        Some(start_time)
+    } else {
+        None
+    };
+
     ManualInterventionResult {
         entries: found_entries,
+        last_successful_request: last_successful_request,
     }
 }
 
