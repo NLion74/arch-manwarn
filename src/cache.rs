@@ -63,8 +63,8 @@ pub fn load_cache(cache_path: &str) -> CacheFile {
     cache_file
 }
 
-pub fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
-    let result: ManualInterventionResult = rss::check_for_manual_intervention();
+pub async fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
+    let result: ManualInterventionResult = rss::check_for_manual_intervention().await;
     let cache_path = get_cache_path();
 
     // Determining whether this is the first run

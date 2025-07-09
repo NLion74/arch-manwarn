@@ -1,10 +1,10 @@
-use feed_rs::parser;
-use reqwest::blocking::get;
-use std::io::Read;
 use html2text::from_read;
 use crate::config::CONFIG;
+use reqwest::Client;
+use feed_rs::parser;
+use std::time::Duration;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct NewsEntry {
     pub title: String,
     pub summary: String,
@@ -16,27 +16,17 @@ pub struct ManualInterventionResult {
     pub entries: Vec<NewsEntry>,
 }
 
-impl Clone for NewsEntry {
-    fn clone(&self) -> Self {
-        NewsEntry {
-            title: self.title.clone(),
-            summary: self.summary.clone(),
-            link: self.link.clone(),
-        }
-    }
-}
-
 pub fn ignored_keywords(entry: &NewsEntry) -> bool {
     for keyword in &CONFIG.ignored_keywords {
-        let keyword = keyword.to_lowercase();
-        let title_lower = entry.title.to_lowercase();
+        let keyword = keyword.to_ascii_lowercase();
+        let title_lower = entry.title.to_ascii_lowercase();
 
         if title_lower.contains(&keyword) {
             return true;
         }
 
         if CONFIG.include_summary_in_query {
-            let summary_lower = entry.summary.to_lowercase();
+            let summary_lower = entry.summary.to_ascii_lowercase();
             if summary_lower.contains(&keyword) {
                 return true;
             }
@@ -45,22 +35,27 @@ pub fn ignored_keywords(entry: &NewsEntry) -> bool {
     false
 }
 
-pub fn check_for_manual_intervention() -> ManualInterventionResult {
+pub async fn check_for_manual_intervention() -> ManualInterventionResult {
     // This gives us a vector of NewsEntry structs from the archlinux.org RSS feed
-    let entries: Vec<NewsEntry> = get_entries();
+    let entries = get_entries();
 
     // Check for entries with keywords that indicate manual intervention
     let keywords = CONFIG.keywords.iter()
-        .map(|kw| kw.to_lowercase())
+        .map(|kw| kw.to_ascii_lowercase())
         .collect::<Vec<String>>();
     let mut found_entries = Vec::new();
 
+    // Biggest performance overhead is here:
+    // This is where the actual network request to the feed is awaited
+    let entries = entries.await;
+
     if !CONFIG.match_all_entries {
         for entry in &entries {
-            let mut text = format!("{}", entry.title.to_lowercase());
-            if CONFIG.include_summary_in_query {
-                text.push_str(&format!(" {}", entry.summary.to_lowercase()));
-            }
+            let text = if CONFIG.include_summary_in_query {
+                format!("{} {}", entry.title, entry.summary).to_ascii_lowercase()
+            } else {
+                entry.title.to_ascii_lowercase()
+            };
             if keywords.iter().any(|kw| text.contains(kw)) {
                 if !ignored_keywords(entry) {
                     found_entries.push(entry.clone());
@@ -80,30 +75,51 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
     }
 }
 
-pub fn get_entries() -> Vec<NewsEntry> {
-    let mut content = String::new();
-    if let Ok(mut response) = get(&CONFIG.rss_feed_url) {
-        if response.read_to_string(&mut content).is_ok() {
-            if let Ok(feed) = parser::parse(content.as_bytes()) {
-                let mut entries = Vec::new();
-                for entry in feed.entries {
-                    let title = entry.title.as_ref().map_or("[No title provided]", |t| &t.content);
-                    let summary = entry.summary.as_ref().map_or("[No summary provided]", |s| &s.content);
-                    let link = entry.links.get(0).map_or("https://archlinux.org/news/", |l| &l.href);
+pub async fn get_entries() -> Vec<NewsEntry> {
+    // Build HTTP client with user agent
+    let client = Client::builder()
+        .user_agent("arch-manwarn")
+        .timeout(Duration::from_secs(10))
+        .build()
+        .expect("Failed to build HTTP client");
 
-                    entries.push(NewsEntry {
-                        title: title.to_string(),
-                        summary: match from_read(summary.as_bytes(), 80) {
-                            Ok(text) => text,
-                            Err(_) => String::from("[could not parse summary]"),
-                        },
-                        link: link.to_string(),
-                    });
-                }
-                return entries;
+    // Fetch RSS feed content asynchronously
+    let content = match client.get(&CONFIG.rss_feed_url).send().await {
+        Ok(response) => match response.text().await {
+            Ok(text) => text,
+            Err(err) => {
+                eprintln!("Failed to read response text: {err}");
+                return Vec::new();
             }
+        },
+        Err(err) => {
+            eprintln!("Failed to fetch RSS feed: {err}");
+            return Vec::new();
         }
-    }
+    };
 
-    Vec::new() // return empty if any step fails
+    // Parse feed content (feed-rs parsing is synchronous)
+    let feed = match parser::parse(content.as_bytes()) {
+        Ok(feed) => feed,
+        Err(err) => {
+            eprintln!("Failed to parse feed: {err}");
+            return Vec::new();
+        }
+    };
+
+    // Map feed entries into your NewsEntry struct
+    feed.entries
+        .iter()
+        .map(|entry| {
+            let title = entry.title.as_ref().map_or("[No title provided]", |t| t.content.as_str());
+            let summary = entry.summary.as_ref().map_or("[No summary provided]", |s| s.content.as_str());
+            let link = entry.links.get(0).map_or("https://archlinux.org/news/", |l| l.href.as_str());
+
+            NewsEntry {
+                title: title.to_string(),
+                summary: from_read(summary.as_bytes(), 80).unwrap_or_else(|_| String::from("[could not parse summary]")),
+                link: link.to_string(),
+            }
+        })
+        .collect()
 }
