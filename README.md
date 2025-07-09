@@ -94,8 +94,11 @@ prune_missing_days = 30
 prune_age_days = 60
 
 
-# URL of the RSS feed (defaults to Arch Linux's official news)
-rss_feed_url = "https://archlinux.org/feeds/news/"
+# URLs of the RSS feeds to be parsed (defaults to Arch Linux's official news)
+# Adding feeds with high latency can massively impact performance
+rss_feed_urls = [
+    "https://archlinux.org/feeds/news/",
+]
 
 # If true, also display the summary for each news entry
 show_summary = false

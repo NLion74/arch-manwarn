@@ -39,8 +39,8 @@ pub struct Config {
     pub prune_missing_days: u64,
     pub prune_age_days: u64,
 
-    /// URL for the RSS feed
-    pub rss_feed_url: String,
+    /// URLs for the RSS feeds
+    pub rss_feed_urls: Vec<String>,
 
     /// Whether to show summary on check
     /// If false, only title and link will be shown
@@ -61,7 +61,7 @@ impl Default for Config {
     fn default() -> Self {
         Self {
             cache_path: "/var/cache/arch-manwarn.json".to_string(),
-            rss_feed_url: "https://archlinux.org/feeds/news/".to_string(),
+            rss_feed_urls: vec!["https://archlinux.org/feeds/news/".to_string()],
             keywords: vec!["manual intervention".to_string()],
             ignored_keywords: vec![],
             include_summary_in_query: true,
