@@ -48,9 +48,7 @@ pub async fn check_for_manual_intervention() -> ManualInterventionResult {
 
     // Biggest performance overhead is here:
     // This is where the actual network request to the feed is awaited
-    let start_await = std::time::Instant::now();
     let entries = entries.await;
-    eprintln!("Fetched {} entries in {:?}", entries.len(), start_await.elapsed());
 
     if !CONFIG.match_all_entries {
         for entry in &entries {
