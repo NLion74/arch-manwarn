@@ -1,40 +1,42 @@
 # arch-manwarn
 
-Tired of having to check Arch news for manual interventions before every upgrade? This tool is for you.
+Tired of manually checking [Arch Linux News](https://archlinux.org/news) for important manual interventions before every system upgrade?
 
-**arch-manwarn** is a minimalist utility written in Rust that checks the Arch news RSS feed for manual intervention warnings and blocks your `pacman` upgrade or install if action is needed.
+**arch-manwarn** is a minimalist utility written in Rust that checks the Arch news RSS feed for manual intervention warnings and blocks your `pacman` upgrade or install if **action is required**.
 
-Its small, efficient codebase emphasizes performance and simplicity, staying out of the way unless your attention is truly required.
+It’s small and efficient, with an emphasis on performance and staying out of the way unless your attention is truly required.
 
 ## What does it do?
 
-When `pacman` installs or upgrades packages, this tool runs as a **pacman hook**. If it detects any recent news classified as requiring manual intervention, it blocks the pacman transaction and mark the news as read.
+Whenever `pacman` performs an upgrade or install, `arch-manwarn` runs as a **pacman hook**.
 
-Once installed, you can verify that the tool is working by running:
+It checks the Arch Linux News feed for recent posts that match your configured keywords (e.g. "manual intervention") and blocks the transaction if any are found — helping you avoid breaking changes.
+
+Once installed, you can test the setup by simply running:
 
 ```
 arch-manwarn
 ```
 
-This should output a short confirmation message.
+This should return a short confirmation message.
 
-There are 4 modes of operation:
+## Modes of Operation
 
--   `arch-manwarn` - shows a short message to confirm installation.
--   `arch-manwarn check` - used internally by the pacman hook to check for new manual interventions.
--   `arch-manwarn status` - Shows a summary of cached manual interventions, including how long ago they were first and last seen.
--   `arch-manwarn read` - Manually marks all unread items as read (usually not needed unless configuration is adjusted).
+`arch-manwarn` supports four modes:
 
-    On the first run, arch-manwarn assumes you have already read and handled all previous manual interventions.
+-   `arch-manwarn` - Prints quick confirmation message (used for sanity checks).
+-   `arch-manwarn check` - Used internally by the pacman hook to detect new warnings.
+-   `arch-manwarn status` - Displays a list of cached matching warnings with timestamps.
+-   `arch-manwarn read` - Manually mark all unread warnings as read (usually not needed unless configuration is adjusted).
+
+    On first run, it assumes you have already read all previous warnings.
 
 arch-manwarn flags news containing "manual intervention" (case-insensitive) as requiring action.
-You can customize keywords in ~/.config/arch-manwarn/config.toml:
+You can customize keywords in `/etc/arch-manwarn/config.toml`
 
 ```
 keywords = ["manual intervention", "breaking change"]
 ```
-
-Originally, this was planned to be interactive, but pacman hooks are inherently not designed for this behavior.
 
 The **pacman hook** only activates on upgrades or installs therefore if for any reason `arch-manwarn` causes issues with your system or pacman transactions you can always remove it:
 
@@ -42,26 +44,28 @@ The **pacman hook** only activates on upgrades or installs therefore if for any 
 sudo pacman -Rns arch-manwarn
 ```
 
-# Why this?
+## Why this tool?
 
-I created this project to avoid missing important manual interventions in the Arch news - without having to read through every news that does not affect me directly.
+I created this tool to avoid missing important manual interventions in the Arch news.
+
+But unlike tools that intrusively interrupt you for every news post, **arch-manwarn** blocks transactions **only** for the ones matching your defined criteria.
+
+It's lean, fast, and written in Rust — prioritizing **simplicity, efficiency, and precision**.
+
 Instead of intrusively blocking every `pacman` transaction for every news, **arch-manwarn** filters _only_ those which require manual intervention.
 
-It’s written in Rust with a small, efficient codebase that prioritizes **minimalism, performance, and staying out of the way.**
+If you want to be notified of **every** Arch news post, you can either configure **arch-manwarn** to match all entries or check out [informant](https://github.com/bradford-smith94/informant), an alternative designed for that behavior.
 
-If you’re thinking, _"Why not just alert me for every news post?"_ - you may prefer [this project](https://github.com/bradford-smith94/informant), which I found shortly after creating this one. It works similarly but interrupts for every new Arch news.
+## Installation
 
-# Installation
+### AUR (Recommended)
 
-## AUR (Recommended)
+Since this package is exclusive to Arch and the pacman package manager, it is only available from my [AUR Package](https://aur.archlinux.org/packages/arch-manwarn).
 
-Since this package is exclusive to Arch and the pacman package manager, this package is only available to be installed from my [AUR Package](https://aur.archlinux.org/packages/arch-manwarn).
+### Configuration
 
-## Configuration
-
-`arch-manwarn` is configured using a TOML file that is initiated with default options. It allows users to customize behavior such as cache location, keyword matching, pruning policy, and warning behavior.
-
-By default, the config file is located at: `/etc/arch-manwarn/config.toml`
+`arch-manwarn` uses a TOML configuration file. The default path is
+`/etc/arch-manwarn/config.toml`
 
 You can override this path using the `ARCH_MANWARN_CONFIG` environment variable:
 
@@ -72,18 +76,16 @@ export ARCH_MANWARN_CONFIG=/path/to/your/config.toml
 Example `config.toml` with default options
 
 ```
-# List of keywords to match in news entry titles
+# Keywords that trigger warnings (case-insensitive)
 keywords = ["manual intervention",]
 
-# If true, show *all* news entries regardless of keywords
+# If true, match all news posts regardless of keywords
 match_all_entries = false
 
-# Ignore news entries containing any of these keywords in either title or summary
+# Ignore news entries containing any of these keywords
 ignored_keywords = []
 
-# Whether to include summary in query of keywords
-# If true, the summary will be included in the search for keywords
-# If false, only the title will be searched
+# Include the summary in keyword matching
 include_summary_in_query=true
 
 # Both of these conditions must be met to prune a cached news entry:
@@ -94,26 +96,26 @@ prune_missing_days = 30
 prune_age_days = 60
 
 
-# URLs of the RSS feeds to be parsed (defaults to Arch Linux's official news)
+# RSS feed URLs to check
 # Adding feeds with high latency can massively impact performance
 rss_feed_urls = [
     "https://archlinux.org/feeds/news/",
 ]
 
-# If true, also display the summary for each news entry
+# Display summaries for matching news posts
 show_summary = false
 
-# If true, automatically mark entries as read after displaying them
+# Automatically mark entries as read after showing them
 mark_as_read_automatically = true
 
-# If true, **warn only** without blocking upgrades (exit code 0)
+# Warn only (don’t block pacman) - essentially dry-run
 warn_only = false
 
-# Where to store the entries cache file
+# Where to store the cache
 cache_path = "/var/cache/arch-manwarn.json"
 ```
 
-# Development
+## Development
 
 A mirror of the AUR PKGBUILD can be found [here](https://github.com/NLion74/arch-manwarn-aur)
 
@@ -125,6 +127,8 @@ ARCH_NEWS_CACHE_PATH=./arch-manwarn-cache.json ARCH_MANWARN_CONFIG=./arch-manwar
 
 ```
 
+To install locally
+
 1. Build the release binary:
    `cargo build --release`
 
@@ -134,7 +138,7 @@ ARCH_NEWS_CACHE_PATH=./arch-manwarn-cache.json ARCH_MANWARN_CONFIG=./arch-manwar
     sudo install -Dm755 target/release/arch-manwarn /usr/bin/arch-manwarn
     ```
 
-3. Copy `hooks/arch-news-check.hook` to `/etc/pacman.d/hooks/`
+3. Copy `hooks/arch-manwarn.hook` to `/etc/pacman.d/hooks/`
     ```
     sudo install -Dm644 hooks/arch-manwarn.hook /usr/share/libalpm/hooks/arch-manwarn.hook
     ```
