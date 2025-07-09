@@ -61,7 +61,7 @@ async fn main() {
         Some("status") => {
             let cache_path = cache::get_cache_path();
             let Ok(_data) = std::fs::read_to_string(&cache_path) else {
-                println!("📭 No cache found. Run `arch-manwarn check` first.");
+                println!("No cache found. Run `arch-manwarn check` first.");
                 return;
             };
 
@@ -72,28 +72,39 @@ async fn main() {
                 return;
             }
 
-            fn days_ago(unix_timestamp: i64) -> i64 {
+            fn days_ago_float(unix_timestamp: i64) -> f64 {
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .expect("Time went backwards")
                     .as_secs() as i64;
 
                 let diff_seconds = now - unix_timestamp;
-                diff_seconds / (24 * 3600)
+                diff_seconds as f64 / 86400.0
             }
 
             println!("Cached Manual Intervention Entries:\n");
 
             for entry in &cache_file.entries {
-                let days_since_first_seen = days_ago(entry.first_seen);
-                let days_since_last_seen = days_ago(entry.last_seen);
+                let days_since_first_seen = days_ago_float(entry.first_seen);
+                let days_since_last_seen = days_ago_float(entry.last_seen);
 
                 println!(
-                    "- {} (first seen {} day(s) ago, last seen {} day(s) ago)",
+                    "- {} (first seen {:.1} day(s) ago, last seen {:.1} day(s) ago)",
                     entry.title,
                     days_since_first_seen,
                     days_since_last_seen
                 );
+            }
+
+            if let Some(ts) = cache_file.last_successful_request {
+                let days = days_ago_float(ts.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64);
+                println!(
+                    "\nLast successful feed request: {:.1} day{} ago.",
+                    days,
+                    if days == 1.0 { "" } else { "s" }
+                );
+            } else {
+                println!("\nLast successful feed request: never.");
             }
         }
 

@@ -22,11 +22,24 @@ pub struct CachedEntry {
     pub last_seen: i64,
 }
 
-#[derive(Default, Debug, serde::Serialize, serde::Deserialize, Clone)]
+#[derive(Debug, serde::Serialize, serde::Deserialize, Clone)]
 
 pub struct CacheFile {
     pub entries: Vec<CachedEntry>,
     pub cache_version: u32,
+
+    #[serde(default)]
+    pub last_successful_request: Option<SystemTime>,
+}
+
+impl Default for CacheFile {
+    fn default() -> Self {
+        CacheFile {
+            entries: Vec::new(),
+            cache_version: CACHE_VERSION,
+            last_successful_request: None,
+        }
+    }
 }
 
 
@@ -54,10 +67,7 @@ pub fn load_cache(cache_path: &str) -> CacheFile {
     let cache_file: CacheFile = if let Ok(data) = fs::read_to_string(&cache_path) {
         serde_json::from_str(&data).unwrap_or_default()
     } else {
-        CacheFile {
-            entries: Vec::new(),
-            cache_version: CACHE_VERSION,
-        }
+        CacheFile::default()
     };
 
     cache_file
@@ -69,18 +79,29 @@ pub async fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
 
     // Determining whether this is the first run
     // by checking if the cache file exists
-    let mut first_run = !Path::new(&cache_path).exists();
+    let first_run = !Path::new(&cache_path).exists();
 
     let mut cache_file = load_cache(&cache_path);
 
-    // Ensure the cache version is correct
-    if cache_file.cache_version != CACHE_VERSION {
-        eprintln!("Cache version mismatch. Resetting cache.");
-        cache_file = CacheFile {
-            entries: Vec::new(),
-            cache_version: CACHE_VERSION,
-        };
-        first_run = true; // Treat as first run if cache version is reset
+    // Only update cache if the result contains a successful request
+    if let Some(success_timestamp) = result.last_successful_request {
+        cache_file.last_successful_request = Some(success_timestamp);
+    }
+
+    // Check whether the last successful request is older than 1 day
+    if let Some(last_success) = cache_file.last_successful_request {
+        if let Ok(duration) = last_success.elapsed() {
+            let seconds = duration.as_secs();
+            if seconds > 86400 {
+                let days = seconds as f64 / 86400.0;
+                eprintln!(
+                    "Warning: last successful connection to the RSS feed(s) was {:.1} days ago.",
+                    days
+                );
+            }
+        }
+    } else {
+        eprintln!("Warning: never successfully connected to the RSS feed(s) yet.");
     }
 
     // Create a mutable reference to the entries vector
