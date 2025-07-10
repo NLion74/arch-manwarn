@@ -5,7 +5,7 @@ Type = Package
 Target = *
 
 [Action]
-Description = Checking Arch news for manual intervention...
+Description = Checking Arch news for matching entries...
 When = PreTransaction
 AbortOnFail
 Exec = /usr/bin/arch-manwarn check

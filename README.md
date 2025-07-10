@@ -4,7 +4,7 @@ Tired of manually checking [Arch Linux News](https://archlinux.org/news) for imp
 
 **arch-manwarn** is a minimalist utility written in Rust that checks the Arch news RSS feed for manual intervention warnings and blocks your `pacman` upgrade or install if **action is required**.
 
-It’s small and efficient, with an emphasis on performance and staying out of the way unless your attention is truly required.
+It’s efficient and highly configurable, with an emphasis on performance and staying out of the way unless your attention is truly required.
 
 ## What does it do?
 
