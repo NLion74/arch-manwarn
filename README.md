@@ -1,18 +1,21 @@
 # arch-manwarn
 
-Tired of manually checking [Arch Linux News](https://archlinux.org/news) for important manual interventions before every system upgrade?
+[![AUR version](https://img.shields.io/aur/version/arch-manwarn)](https://aur.archlinux.org/packages/arch-manwarn)
+[![GitHub stars](https://img.shields.io/github/stars/NLion74/arch-manwarn?style=social)](https://github.com/NLion74/arch-manwarn/stargazers)
+[![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](https://unlicense.org/)
+[![GitHub release](https://img.shields.io/github/v/release/NLion74/arch-manwarn)](https://github.com/NLion74/arch-manwarn/releases)
 
-**arch-manwarn** is a minimalist utility written in Rust that checks the Arch news RSS feed for manual intervention warnings and blocks your `pacman` upgrade or install if **action is required**.
+**arch-manwarn** is a fast, [configurable](#configuration) and lightweight Rust-Based pacman hook that detects [Arch Linux News](https://archlinux.org/news) requiring manual intervention, and blocks upgrades **only when relevant** to your system.
 
-It’s efficient and highly configurable, with an emphasis on performance and staying out of the way unless your attention is truly required.
+It’s designed to stay quiet unless action is actually needed, helping you avoid breakage without adding unnecessary noise.
 
 ## What does it do?
 
 Whenever `pacman` performs an upgrade or install, `arch-manwarn` runs as a **pacman hook**.
 
-It checks the Arch Linux News feed for recent posts that match your configured keywords (e.g. "manual intervention") and blocks the transaction if any are found — helping you avoid breaking changes.
+It checks the Arch Linux News feed for recent posts that match your [configured](#configuration) keywords (e.g. `"manual intervention"`) and blocks the transaction if a match is found — helping you avoid breaking changes.
 
-Once installed, you can test the setup by simply running:
+Once installed, test it with::
 
 ```
 arch-manwarn
@@ -44,7 +47,7 @@ The **pacman hook** only activates on upgrades or installs therefore if for any 
 sudo pacman -Rns arch-manwarn
 ```
 
-## Why this tool?
+## Why arch-manwarn?
 
 I created this tool to avoid missing important manual interventions in the Arch news.
 
@@ -60,7 +63,17 @@ If you want to be notified of **every** Arch news post, you can either configure
 
 ### AUR (Recommended)
 
-Since this package is exclusive to Arch and the pacman package manager, it is only available from my [AUR Package](https://aur.archlinux.org/packages/arch-manwarn).
+Install from the [AUR Package](https://aur.archlinux.org/packages/arch-manwarn):
+
+```
+paru -S arch-manwarn
+```
+
+or
+
+```
+yay -S arch-manwarn
+```
 
 ### Configuration
 
@@ -142,3 +155,9 @@ To install locally
     ```
     sudo install -Dm644 hooks/arch-manwarn.hook /usr/share/libalpm/hooks/arch-manwarn.hook
     ```
+
+## Contribute & Support
+
+Contributions, bug reports, and feature requests are welcome!
+
+Star the repo ⭐ if you find it useful!
