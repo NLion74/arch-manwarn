@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use lazy_static::lazy_static;
+use once_cell::sync::Lazy;
 use std::env;
 
 
@@ -50,7 +50,6 @@ pub struct Config {
     pub mark_as_read_automatically: bool,
 
     /// Whether to just warn (don’t block transaction)
-    /// TODO: Implement this properly
     pub warn_only: bool,
 
     /// Path where cache is stored
@@ -119,6 +118,4 @@ impl Config {
     }
 }
 
-lazy_static! {
-    pub static ref CONFIG: Config = Config::load();
-}
+pub static CONFIG: Lazy<Config> = Lazy::new(|| Config::load());

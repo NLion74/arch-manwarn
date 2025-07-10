@@ -42,7 +42,6 @@ impl Default for CacheFile {
     }
 }
 
-
 pub fn current_unix_time() -> i64 {
     SystemTime::now()
         .duration_since(UNIX_EPOCH)
