@@ -11,11 +11,11 @@ async fn main() {
     match args.next().as_deref() {
         None => {
             println!(
-                "arch-manwarn is installed as a pacman hook to check for manual interventions in Arch Linux news.\n\
+                "arch-manwarn is installed as a pacman hook to check for relevant entries in the Arch Linux news feed.\n\
                  There are 4 modes of operation:\n\n\
                  arch-manwarn            - Shows this short message to confirm installation.\n\
-                 arch-manwarn check      - Used internally by the pacman hook to check for new manual interventions.\n\
-                 arch-manwarn status     - Shows a summary of cached manual interventions, including how long ago they were first and last seen.\n\
+                 arch-manwarn check      - Used internally by the pacman hook to check for new matching entries.\n\
+                 arch-manwarn status     - Shows a summary of cached matching entries, including how long ago they were first and last seen.\n\
                  arch-manwarn read       - Manually marks all unread items as read (usually not needed unless configuration is adjusted).\n"
             );
         }
@@ -23,7 +23,7 @@ async fn main() {
         Some("check") => {
             let new_entries = cache::check_new_entries(false).await;
             if !new_entries.is_empty() {
-                eprintln!("\nManual intervention required for the following Arch news entries:\n");
+                eprintln!("\nMatched the following Arch news entries:\n");
                 if !CONFIG.show_summary {
                     for entry in &new_entries {
                     eprintln!("- {}", entry.title);
@@ -68,7 +68,7 @@ async fn main() {
             let cache_file: cache::CacheFile = cache::load_cache(&cache_path);
 
             if cache_file.entries.is_empty() {
-                println!("No cached manual interventions found.");
+                println!("No cached matching entries found.");
                 return;
             }
 
@@ -82,7 +82,7 @@ async fn main() {
                 diff_seconds as f64 / 86400.0
             }
 
-            println!("Cached Manual Intervention Entries:\n");
+            println!("Cached Matching Entries:\n");
 
             for entry in &cache_file.entries {
                 let days_since_first_seen = days_ago_float(entry.first_seen);
@@ -109,8 +109,14 @@ async fn main() {
         }
 
         Some(cmd) => {
-            eprintln!("Unknown option: {cmd}");
-            eprintln!("Usage:\n  arch-manwarn check");
+            eprintln!("Error: Unknown option '{cmd}'");
+            eprintln!(
+                "Usage:
+                arch-manwarn            - Shows a short confirmation message.
+                arch-manwarn check      - Checks for new matching Arch news entries.
+                arch-manwarn status     - Displays summary of cached entries.
+                arch-manwarn read       - Marks all entries as read."
+            );
             std::process::exit(2);
         }
     }

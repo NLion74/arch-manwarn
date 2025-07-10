@@ -1,33 +1,41 @@
-.TH ARCH-MANWARN 1 "July 2025" "arch-manwarn 0.5.0" "User Commands"
+.TH ARCH-MANWARN 1 "" "" "User Commands"
 .SH NAME
-arch-manwarn \- check Arch Linux news for manual intervention warnings
+arch-manwarn \- block pacman upgrades if manual intervention is required
 .SH SYNOPSIS
 .B arch-manwarn
-.RI [ check ]
+.RI [ check | status | read ]
 .SH DESCRIPTION
 \fBarch-manwarn\fR is a minimalist utility written in Rust that checks the Arch Linux news RSS feed for posts requiring manual intervention.
 
-It is designed to be used as a pacman hook and will block package upgrades or installs if action is needed.
+Designed to run as a pacman hook, it blocks upgrades or installs if a matching news post is found, helping users avoid breaking changes due to missed interventions.
 
-Its small, efficient codebase emphasizes performance and simplicity, staying out of the way unless your attention is truly required.
+By default, it matches news titles and summaries against configurable keywords such as "manual intervention".
 
-On first run, \fBarch-manwarn\fR assumes all existing manual interventions have already been handled.
+On first run, \fBarch-manwarn\fR assumes all prior news has already been reviewed.
 
 .SH COMMANDS
 .TP
 .B (no argument)
-Prints a confirmation message to verify installation.
+Prints a confirmation message to verify that \fBarch-manwarn\fR is set up correctly.
 .TP
 .B check
-Checks the Arch Linux news feed for recent manual interventions. Used internally by the pacman hook.
+Checks the Arch Linux RSS feed for matching news posts. Used by the pacman hook to block upgrades.
+.TP
+.B status
+Displays a list of cached matching news posts with timestamps.
+.TP
+.B read
+Marks all cached unread posts as read.
 
 .SH PACMAN HOOK
-When installed correctly, a pacman hook triggers \fBarch-manwarn check\fR on every upgrade or install.
+When installed correctly, a pacman hook triggers \fBarch-manwarn check\fR on every \fBpacman\fR upgrade or install.
 
-If a new manual intervention is found, the pacman transaction is blocked and the entry is marked as read.
+If a new matching post is found, the transaction is blocked and the post is added to the read cache.
 
 .SH DETECTION
-A news post is considered a manual intervention if its title or content contains any of the following keywords:
+A news entry is flagged if it contains any of the configured keywords in the title or summary (case-insensitive).
+
+Default keywords include:
 .IP \[bu] 2
 manual intervention
 .IP \[bu]
@@ -39,21 +47,33 @@ intervention
 
 .SH FILES
 .TP
+.I /etc/arch-manwarn/config.toml
+Configuration file specifying keywords, RSS URLs, and behavior.
+.TP
 .I /var/cache/arch-manwarn.json
-Stores read status for manual interventions.
+Stores the cache of seen and read news entries.
 
 .SH ENVIRONMENT
 .TP
+.B ARCH_MANWARN_CONFIG
+Overrides the default config file path.
+.TP
 .B ARCH_NEWS_CACHE_PATH
-Overrides the default path to the JSON cache file.
+Overrides the default cache file path.
 
 .SH EXAMPLES
 .TP
 .B arch-manwarn
-Prints a confirmation message.
+Prints a quick confirmation message.
 .TP
 .B arch-manwarn check
-Checks for manual interventions. Used by pacman hook.
+Checks for matching news entries. Used by pacman hook.
+.TP
+.B arch-manwarn status
+Lists all cached entries matching your keywords.
+.TP
+.B arch-manwarn read
+Marks all cached entries as read.
 
 .SH SEE ALSO
 pacman(8), curl(1)
@@ -62,7 +82,4 @@ pacman(8), curl(1)
 Written by NLion74 <https://nlion.nl/>.
 
 .SH LICENSE
-UNLICENSE.
-
-.SH VERSION
-arch-manwarn 0.5.0
+UNLICENSE
