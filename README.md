@@ -15,7 +15,7 @@ Whenever `pacman` performs an upgrade or install, `arch-manwarn` runs as a **pac
 
 It checks the Arch Linux News feed for recent posts that match your [configured](#configuration) keywords (e.g. `"manual intervention"`) and blocks the transaction if a match is found — helping you avoid breaking changes.
 
-Once installed, test it with::
+Once installed, test it with:
 
 ```
 arch-manwarn
