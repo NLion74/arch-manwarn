@@ -30,6 +30,8 @@ pub struct Config {
     /// Ignore these keywords explicitly
     pub ignored_keywords: Vec<String>,
 
+    pub case_sensitive: bool,
+
     /// Whether to include summary in query of keywords
     /// If true, the summary will be included in the search for keywords
     /// If false, only the title will be searched
@@ -63,6 +65,7 @@ impl Default for Config {
             rss_feed_urls: vec!["https://archlinux.org/feeds/news/".to_string()],
             keywords: vec!["manual intervention".to_string()],
             ignored_keywords: vec![],
+            case_sensitive: false,
             include_summary_in_query: true,
             prune_missing_days: 30,
             prune_age_days: 60,
