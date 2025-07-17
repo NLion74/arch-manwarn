@@ -1,6 +1,9 @@
 [package]
 name = "arch-manwarn"
-version = "0.9.4"
+version = "1.0.0"
+description = "A tool to monitor Arch Linux news for manual intervention entries."
+license = "UNLICENSE"
+repository = "https://github.com/nlion/arch-manwarn"
 authors = ["nlion <nlion@nlion.nl>"]
 edition = "2021"
 
