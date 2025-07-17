@@ -84,7 +84,11 @@ async fn main() {
 
             println!("Cached Matching Entries:\n");
 
-            for entry in &cache_file.entries {
+            // Sort entries by last seen date, most recent at the bottom
+            let mut sorted_entries = cache_file.entries.clone();
+            sorted_entries.sort_by(|a, b| a.last_seen.cmp(&b.last_seen));
+
+            for entry in &sorted_entries {
                 let days_since_first_seen = days_ago_float(entry.first_seen);
                 let days_since_last_seen = days_ago_float(entry.last_seen);
 
