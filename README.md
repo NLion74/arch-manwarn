@@ -98,6 +98,9 @@ match_all_entries = false
 # Ignore news entries containing any of these keywords
 ignored_keywords = []
 
+# Whether keyword query is case sensitive (Applies to both ignore and regular keywords)
+case_sensitive = false
+
 # Include the summary in keyword matching
 include_summary_in_query=true
 

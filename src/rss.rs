@@ -21,22 +21,33 @@ pub struct ManualInterventionResult {
 
 pub fn ignored_keywords(entry: &NewsEntry) -> bool {
     for keyword in &CONFIG.ignored_keywords {
-        let keyword = keyword.to_ascii_lowercase();
-        let title_lower = entry.title.to_ascii_lowercase();
-
-        if title_lower.contains(&keyword) {
-            return true;
-        }
-
-        if CONFIG.include_summary_in_query {
-            let summary_lower = entry.summary.to_ascii_lowercase();
-            if summary_lower.contains(&keyword) {
+        if CONFIG.case_sensitive {
+            // Case-sensitive matching
+            if entry.title.contains(keyword) {
                 return true;
+            }
+            if CONFIG.include_summary_in_query && entry.summary.contains(keyword) {
+                return true;
+            }
+        } else {
+            // Case-insensitive matching
+            let keyword_lower = keyword.to_ascii_lowercase();
+            let title_lower = entry.title.to_ascii_lowercase();
+
+            if title_lower.contains(&keyword_lower) {
+                return true;
+            }
+            if CONFIG.include_summary_in_query {
+                let summary_lower = entry.summary.to_ascii_lowercase();
+                if summary_lower.contains(&keyword_lower) {
+                    return true;
+                }
             }
         }
     }
     false
 }
+
 
 pub async fn check_for_manual_intervention() -> ManualInterventionResult {
     // This gives us a vector of NewsEntry structs from the archlinux.org RSS feed
@@ -44,9 +55,13 @@ pub async fn check_for_manual_intervention() -> ManualInterventionResult {
     let entries = get_entries_from_feeds();
 
     // Check for entries with keywords that indicate manual intervention
-    let keywords = CONFIG.keywords.iter()
-        .map(|kw| kw.to_ascii_lowercase())
-        .collect::<Vec<String>>();
+    let keywords: Vec<String> = if CONFIG.case_sensitive {
+        CONFIG.keywords.iter().cloned().collect()
+    } else {
+        CONFIG.keywords.iter()
+            .map(|kw| kw.to_ascii_lowercase())
+            .collect()
+    };
     let mut found_entries = Vec::new();
 
     // Biggest performance overhead is here:
@@ -56,11 +71,18 @@ pub async fn check_for_manual_intervention() -> ManualInterventionResult {
     if !CONFIG.match_all_entries {
         for entry in &entries {
             let text = if CONFIG.include_summary_in_query {
-                format!("{} {}", entry.title, entry.summary).to_ascii_lowercase()
+                format!("{} {}", entry.title, entry.summary)
             } else {
-                entry.title.to_ascii_lowercase()
+                entry.title.clone()
             };
-            if keywords.iter().any(|kw| text.contains(kw)) {
+
+            let text_to_check = if CONFIG.case_sensitive {
+                text
+            } else {
+                text.to_ascii_lowercase()
+            };
+
+            if keywords.iter().any(|kw| text_to_check.contains(kw)) {
                 if !ignored_keywords(entry) {
                     found_entries.push(entry.clone());
                 }
