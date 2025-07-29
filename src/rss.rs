@@ -82,10 +82,9 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
                 text.to_ascii_lowercase()
             };
 
-            if keywords.iter().any(|kw| text_to_check.contains(kw))
-                && !ignored_keywords(entry) {
-                    found_entries.push(entry.clone());
-                }
+            if keywords.iter().any(|kw| text_to_check.contains(kw)) && !ignored_keywords(entry) {
+                found_entries.push(entry.clone());
+            }
         }
     } else {
         for entry in &entries {
@@ -157,10 +156,12 @@ async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry
         .into_iter()
         .map(|entry| {
             let title = entry.title.unwrap_or("[No title provided]".to_owned());
-            let summary = entry
-                .description
-                .as_deref()
-                .unwrap_or("[No summary provided]");
+            let summary = if CONFIG.replace_description_with_content {
+                entry.content
+            } else {
+                entry.description
+            };
+            let summary = summary.as_deref().unwrap_or("[No summary provided]");
             let link = entry.link.unwrap_or("[No link provided]".to_owned());
 
             NewsEntry {

@@ -47,6 +47,8 @@ pub struct Config {
     /// If false, only title and link will be shown
     pub show_summary: bool,
 
+    pub replace_description_with_content: bool,
+
     /// Whether to automatically mark as read after blocking
     pub mark_as_read_automatically: bool,
 
@@ -70,6 +72,7 @@ impl Default for Config {
             prune_age_days: 60,
             match_all_entries: false,
             show_summary: false,
+            replace_description_with_content: false,
             mark_as_read_automatically: true,
             warn_only: false,
         }
