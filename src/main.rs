@@ -27,11 +27,13 @@ fn main() {
                     for entry in &new_entries {
                     eprintln!("- {}", entry.title);
                     eprintln!("  For more details see: {}", entry.link);
+                    eprintln!("---")
                     }
                 } else {
                     for entry in &new_entries {
                         eprintln!("- {}", entry.title);
-                        eprintln!("\nSummary: \n{}", entry.summary)
+                        eprintln!("\nSummary: \n{}", entry.summary);
+                        eprintln!("---")
                     }
                 }
                 eprintln!("\nAll other news can be found on https://archlinux.org/news/.");
