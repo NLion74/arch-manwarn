@@ -1,7 +1,7 @@
 use crate::config::CONFIG;
-use feed_rs::parser;
 use html2text::from_read;
 use reqwest::Client;
+use std::str::FromStr as _;
 use std::time::Duration;
 use std::time::SystemTime;
 
@@ -145,35 +145,29 @@ async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry
         }
     };
 
-    let feed = match parser::parse(content.as_bytes()) {
-        Ok(feed) => feed,
+    let channel = match rss::Channel::from_str(&content) {
+        Ok(ch) => ch,
         Err(err) => {
             eprintln!("Failed to parse feed {}: {err}", url);
             return Vec::new();
         }
     };
-
-    feed.entries
-        .iter()
+    channel
+        .items
+        .into_iter()
         .map(|entry| {
-            let title = entry
-                .title
-                .as_ref()
-                .map_or("[No title provided]", |t| t.content.as_str());
+            let title = entry.title.unwrap_or("[No title provided]".to_owned());
             let summary = entry
-                .summary
-                .as_ref()
-                .map_or("[No summary provided]", |s| s.content.as_str());
-            let link = entry
-                .links
-                .get(0)
-                .map_or("[No link provided]", |l| l.href.as_str());
+                .description
+                .as_deref()
+                .unwrap_or("[No summary provided]");
+            let link = entry.link.unwrap_or("[No link provided]".to_owned());
 
             NewsEntry {
-                title: title.to_string(),
+                title,
                 summary: from_read(summary.as_bytes(), 80)
                     .unwrap_or_else(|_| String::from("[could not parse summary]")),
-                link: link.to_string(),
+                link,
             }
         })
         .collect()
