@@ -5,9 +5,8 @@ use crate::config::CONFIG;
 
 fn main() {
     let mut args = std::env::args();
-    let _exe = args.next();
 
-    match args.next().as_deref() {
+    match args.nth(1).as_deref() {
         None => {
             println!(
                 "arch-manwarn is installed as a pacman hook to check for relevant entries in the Arch Linux news feed.\n\
@@ -72,14 +71,14 @@ fn main() {
                 return;
             }
 
-            fn days_ago_float(unix_timestamp: i64) -> f64 {
+            fn days_ago_float(unix_timestamp: u64) -> f64 {
                 let now = std::time::SystemTime::now()
                     .duration_since(std::time::UNIX_EPOCH)
                     .expect("Time went backwards")
-                    .as_secs() as i64;
+                    .as_secs_f64();
 
-                let diff_seconds = now - unix_timestamp;
-                diff_seconds as f64 / 86400.0
+                let diff_seconds = now - unix_timestamp as f64;
+                diff_seconds / 86400.0
             }
 
             println!("Cached Matching Entries:\n");
@@ -99,9 +98,8 @@ fn main() {
             }
 
             if let Some(ts) = cache_file.last_successful_request {
-                let days = days_ago_float(
-                    ts.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64,
-                );
+                let days =
+                    days_ago_float(ts.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs());
                 println!(
                     "\nLast successful feed request: {:.1} day{} ago.",
                     days,

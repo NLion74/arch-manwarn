@@ -7,6 +7,7 @@ use std::path::{Path, PathBuf};
 
 pub fn config_path() -> PathBuf {
     // For development: ARCH_MANWARN_CONFIG=/path/to/custom/config.toml
+    #[cfg(debug_assertions)]
     if let Ok(env_path) = env::var("ARCH_MANWARN_CONFIG") {
         return PathBuf::from(env_path);
     }

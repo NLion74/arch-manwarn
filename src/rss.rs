@@ -68,8 +68,14 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
     // Include tokio runtime initializing
     let entries = get_entries_from_feeds();
 
+    let last_successful_request = if !entries.is_empty() {
+        Some(start_time)
+    } else {
+        None
+    };
+
     if !CONFIG.match_all_entries {
-        for entry in &entries {
+        for entry in entries {
             let text = if CONFIG.include_summary_in_query {
                 format!("{} {}", entry.title, entry.summary)
             } else {
@@ -82,23 +88,17 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
                 text.to_ascii_lowercase()
             };
 
-            if keywords.iter().any(|kw| text_to_check.contains(kw)) && !ignored_keywords(entry) {
-                found_entries.push(entry.clone());
+            if keywords.iter().any(|kw| text_to_check.contains(kw)) && !ignored_keywords(&entry) {
+                found_entries.push(entry);
             }
         }
     } else {
-        for entry in &entries {
-            if !ignored_keywords(entry) {
-                found_entries.push(entry.clone());
+        for entry in entries {
+            if !ignored_keywords(&entry) {
+                found_entries.push(entry);
             }
         }
     }
-
-    let last_successful_request = if !entries.is_empty() {
-        Some(start_time)
-    } else {
-        None
-    };
 
     ManualInterventionResult {
         entries: found_entries,
@@ -126,7 +126,7 @@ pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
     let fetches = tokio::task::JoinSet::from_iter(fetch_contents.chain(fetch_descriptions));
 
     // Await all fetches concurrently
-    let results: Vec<Vec<NewsEntry>> = fetches.join_all().await;
+    let results = fetches.join_all().await;
 
     // Flatten all entries into one Vec
     results.into_iter().flatten().collect()
