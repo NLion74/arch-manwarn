@@ -3,8 +3,7 @@ mod cache;
 mod config;
 use crate::config::CONFIG;
 
-#[tokio::main]
-async fn main() {
+fn main() {
     let mut args = std::env::args();
     let _exe = args.next();
 
@@ -21,7 +20,7 @@ async fn main() {
         }
 
         Some("check") => {
-            let new_entries = cache::check_new_entries(false).await;
+            let new_entries = cache::check_new_entries(false);
             if !new_entries.is_empty() {
                 eprintln!("\nMatched the following Arch news entries:\n");
                 if !CONFIG.show_summary {
@@ -47,7 +46,7 @@ async fn main() {
         }
 
         Some("read") => {
-            let new_entries = cache::check_new_entries(true).await;
+            let new_entries = cache::check_new_entries(true);
             if new_entries.is_empty() {
                 println!("No unseen entries — nothing to mark as read.");
             } else {

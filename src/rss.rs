@@ -47,10 +47,9 @@ pub fn ignored_keywords(entry: &NewsEntry) -> bool {
     false
 }
 
-pub async fn check_for_manual_intervention() -> ManualInterventionResult {
+pub fn check_for_manual_intervention() -> ManualInterventionResult {
     // This gives us a vector of NewsEntry structs from the archlinux.org RSS feed
     let start_time = SystemTime::now();
-    let entries = get_entries_from_feeds();
 
     // Check for entries with keywords that indicate manual intervention
     let keywords: Vec<String> = if CONFIG.case_sensitive {
@@ -66,7 +65,8 @@ pub async fn check_for_manual_intervention() -> ManualInterventionResult {
 
     // Biggest performance overhead is here:
     // This is where the actual network request to the feed is awaited
-    let entries = entries.await;
+    // Include tokio runtime initializing
+    let entries = get_entries_from_feeds();
 
     if !CONFIG.match_all_entries {
         for entry in &entries {
@@ -108,6 +108,7 @@ pub async fn check_for_manual_intervention() -> ManualInterventionResult {
     }
 }
 
+#[tokio::main]
 pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
     let client = Client::builder()
         .user_agent("arch-manwarn")
