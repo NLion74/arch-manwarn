@@ -1,8 +1,7 @@
-use html2text::from_read;
 use crate::config::CONFIG;
-use futures::future::join_all;
-use reqwest::Client;
 use feed_rs::parser;
+use html2text::from_read;
+use reqwest::Client;
 use std::time::Duration;
 use std::time::SystemTime;
 
@@ -48,7 +47,6 @@ pub fn ignored_keywords(entry: &NewsEntry) -> bool {
     false
 }
 
-
 pub async fn check_for_manual_intervention() -> ManualInterventionResult {
     // This gives us a vector of NewsEntry structs from the archlinux.org RSS feed
     let start_time = SystemTime::now();
@@ -58,7 +56,9 @@ pub async fn check_for_manual_intervention() -> ManualInterventionResult {
     let keywords: Vec<String> = if CONFIG.case_sensitive {
         CONFIG.keywords.iter().cloned().collect()
     } else {
-        CONFIG.keywords.iter()
+        CONFIG
+            .keywords
+            .iter()
             .map(|kw| kw.to_ascii_lowercase())
             .collect()
     };
@@ -91,7 +91,7 @@ pub async fn check_for_manual_intervention() -> ManualInterventionResult {
     } else {
         for entry in &entries {
             if !ignored_keywords(entry) {
-                    found_entries.push(entry.clone());
+                found_entries.push(entry.clone());
             }
         }
     }
@@ -116,18 +116,21 @@ pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
         .expect("Failed to build HTTP client");
 
     // Create a vector of futures, one for each feed URL
-    let fetches = CONFIG.rss_feed_urls.iter().map(|url| {
-        fetch_and_parse_single_feed(&client, url)
-    });
+    let fetches = tokio::task::JoinSet::from_iter(
+        CONFIG
+            .rss_feed_urls
+            .iter()
+            .map(|url| fetch_and_parse_single_feed(client.clone(), url)),
+    );
 
     // Await all fetches concurrently
-    let results: Vec<Vec<NewsEntry>> = join_all(fetches).await;
+    let results: Vec<Vec<NewsEntry>> = fetches.join_all().await;
 
     // Flatten all entries into one Vec
     results.into_iter().flatten().collect()
 }
 
-async fn fetch_and_parse_single_feed(client: &Client, url: &str) -> Vec<NewsEntry> {
+async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry> {
     let content = match client.get(url).send().await {
         Ok(response) => match response.text().await {
             Ok(text) => text,
@@ -153,13 +156,23 @@ async fn fetch_and_parse_single_feed(client: &Client, url: &str) -> Vec<NewsEntr
     feed.entries
         .iter()
         .map(|entry| {
-            let title = entry.title.as_ref().map_or("[No title provided]", |t| t.content.as_str());
-            let summary = entry.summary.as_ref().map_or("[No summary provided]", |s| s.content.as_str());
-            let link = entry.links.get(0).map_or("[No link provided]", |l| l.href.as_str());
+            let title = entry
+                .title
+                .as_ref()
+                .map_or("[No title provided]", |t| t.content.as_str());
+            let summary = entry
+                .summary
+                .as_ref()
+                .map_or("[No summary provided]", |s| s.content.as_str());
+            let link = entry
+                .links
+                .get(0)
+                .map_or("[No link provided]", |l| l.href.as_str());
 
             NewsEntry {
                 title: title.to_string(),
-                summary: from_read(summary.as_bytes(), 80).unwrap_or_else(|_| String::from("[could not parse summary]")),
+                summary: from_read(summary.as_bytes(), 80)
+                    .unwrap_or_else(|_| String::from("[could not parse summary]")),
                 link: link.to_string(),
             }
         })
