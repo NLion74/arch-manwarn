@@ -115,12 +115,15 @@ pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
         .expect("Failed to build HTTP client");
 
     // Create a vector of futures, one for each feed URL
-    let fetches = tokio::task::JoinSet::from_iter(
-        CONFIG
-            .rss_feed_urls
-            .iter()
-            .map(|url| fetch_and_parse_single_feed(client.clone(), url)),
-    );
+    let fetch_descriptions = CONFIG
+        .rss_feed_urls
+        .iter()
+        .map(|url| fetch_and_parse_single_feed(client.clone(), url, false));
+    let fetch_contents = CONFIG
+        .rss_feed_urls_content
+        .iter()
+        .map(|url| fetch_and_parse_single_feed(client.clone(), url, true));
+    let fetches = tokio::task::JoinSet::from_iter(fetch_contents.chain(fetch_descriptions));
 
     // Await all fetches concurrently
     let results: Vec<Vec<NewsEntry>> = fetches.join_all().await;
@@ -129,7 +132,11 @@ pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
     results.into_iter().flatten().collect()
 }
 
-async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry> {
+async fn fetch_and_parse_single_feed(
+    client: Client,
+    url: &str,
+    using_content: bool,
+) -> Vec<NewsEntry> {
     let content = match client.get(url).send().await {
         Ok(response) => match response.text().await {
             Ok(text) => text,
@@ -156,7 +163,7 @@ async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry
         .into_iter()
         .map(|entry| {
             let title = entry.title.unwrap_or("[No title provided]".to_owned());
-            let summary = if CONFIG.replace_description_with_content {
+            let summary = if using_content {
                 entry.content
             } else {
                 entry.description

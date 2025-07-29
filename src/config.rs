@@ -42,12 +42,12 @@ pub struct Config {
 
     /// URLs for the RSS feeds
     pub rss_feed_urls: Vec<String>,
+    /// URLs for the RSS feeds(take content as summary rather description)
+    pub rss_feed_urls_content: Vec<String>,
 
     /// Whether to show summary on check
     /// If false, only title and link will be shown
     pub show_summary: bool,
-
-    pub replace_description_with_content: bool,
 
     /// Whether to automatically mark as read after blocking
     pub mark_as_read_automatically: bool,
@@ -64,6 +64,7 @@ impl Default for Config {
         Self {
             cache_path: "/var/cache/arch-manwarn.json".to_string(),
             rss_feed_urls: vec!["https://archlinux.org/feeds/news/".to_string()],
+            rss_feed_urls_content: vec![],
             keywords: vec!["manual intervention".to_string()],
             ignored_keywords: vec![],
             case_sensitive: false,
@@ -72,7 +73,6 @@ impl Default for Config {
             prune_age_days: 60,
             match_all_entries: false,
             show_summary: false,
-            replace_description_with_content: false,
             mark_as_read_automatically: true,
             warn_only: false,
         }
