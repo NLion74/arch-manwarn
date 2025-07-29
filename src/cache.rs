@@ -1,8 +1,8 @@
+use crate::config::CONFIG;
+use crate::rss::{self, ManualInterventionResult};
 use std::fs;
 use std::path::Path;
-use crate::{rss::{self, ManualInterventionResult}};
 use std::time::{SystemTime, UNIX_EPOCH};
-use crate::config::CONFIG;
 
 pub fn get_cache_path() -> String {
     std::env::var("ARCH_NEWS_CACHE_PATH")
@@ -52,18 +52,21 @@ pub fn current_unix_time() -> i64 {
 fn save_cache(cache_path: String, cache_file: CacheFile) {
     if let Some(parent) = Path::new(&cache_path).parent() {
         if let Err(e) = fs::create_dir_all(parent) {
-            eprintln!("Failed to create cache directory {:?}: {}", parent, e);
+            eprintln!("Failed to create cache directory {parent:?}: {e}");
         }
     }
-    if let Err(e) = fs::write(&cache_path, serde_json::to_string_pretty(&cache_file).unwrap()) {
-        eprintln!("Failed to write cache file {}: {}", cache_path, e);
+    if let Err(e) = fs::write(
+        &cache_path,
+        serde_json::to_string_pretty(&cache_file).unwrap(),
+    ) {
+        eprintln!("Failed to write cache file {cache_path}: {e}");
         eprintln!("Try running the program as root or with sudo if you want to use /var/cache.");
     }
 }
 
 pub fn load_cache(cache_path: &str) -> CacheFile {
     // Load previously cached entries
-    let cache_file: CacheFile = if let Ok(data) = fs::read_to_string(&cache_path) {
+    let cache_file: CacheFile = if let Ok(data) = fs::read_to_string(cache_path) {
         serde_json::from_str(&data).unwrap_or_default()
     } else {
         CacheFile::default()
@@ -94,8 +97,7 @@ pub fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
             if seconds > 86400 {
                 let days = seconds as f64 / 86400.0;
                 eprintln!(
-                    "Warning: last successful connection to the RSS feed(s) was {:.1} days ago.",
-                    days
+                    "Warning: last successful connection to the RSS feed(s) was {days:.1} days ago."
                 );
             }
         }
@@ -161,5 +163,9 @@ pub fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
 
     // If this is the first run, return an empty vector
     // Otherwise, return the new entries found
-    if first_run { Vec::new() } else { new_entries }
+    if first_run {
+        Vec::new()
+    } else {
+        new_entries
+    }
 }

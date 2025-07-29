@@ -1,6 +1,6 @@
-mod rss;
 mod cache;
 mod config;
+mod rss;
 use crate::config::CONFIG;
 
 fn main() {
@@ -25,9 +25,9 @@ fn main() {
                 eprintln!("\nMatched the following Arch news entries:\n");
                 if !CONFIG.show_summary {
                     for entry in &new_entries {
-                    eprintln!("- {}", entry.title);
-                    eprintln!("  For more details see: {}", entry.link);
-                    eprintln!("---")
+                        eprintln!("- {}", entry.title);
+                        eprintln!("  For more details see: {}", entry.link);
+                        eprintln!("---")
                     }
                 } else {
                     for entry in &new_entries {
@@ -39,7 +39,9 @@ fn main() {
                 eprintln!("\nAll other news can be found on https://archlinux.org/news/.");
 
                 if CONFIG.warn_only {
-                    eprintln!("Arch ManWarn: Warning only mode is enabled — not blocking upgrade.\n");
+                    eprintln!(
+                        "Arch ManWarn: Warning only mode is enabled — not blocking upgrade.\n"
+                    );
                 } else {
                     eprintln!("Arch ManWarn: Exiting to block the upgrade process.\n");
                     std::process::exit(1);
@@ -52,10 +54,7 @@ fn main() {
             if new_entries.is_empty() {
                 println!("No unseen entries — nothing to mark as read.");
             } else {
-                println!(
-                    "Marked {} entries as manually read.",
-                    new_entries.len()
-                );
+                println!("Marked {} entries as manually read.", new_entries.len());
             }
         }
 
@@ -95,14 +94,14 @@ fn main() {
 
                 println!(
                     "- {} (first seen {:.1} day(s) ago, last seen {:.1} day(s) ago)",
-                    entry.title,
-                    days_since_first_seen,
-                    days_since_last_seen
+                    entry.title, days_since_first_seen, days_since_last_seen
                 );
             }
 
             if let Some(ts) = cache_file.last_successful_request {
-                let days = days_ago_float(ts.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64);
+                let days = days_ago_float(
+                    ts.duration_since(std::time::UNIX_EPOCH).unwrap().as_secs() as i64,
+                );
                 println!(
                     "\nLast successful feed request: {:.1} day{} ago.",
                     days,

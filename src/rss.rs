@@ -53,7 +53,7 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
 
     // Check for entries with keywords that indicate manual intervention
     let keywords: Vec<String> = if CONFIG.case_sensitive {
-        CONFIG.keywords.iter().cloned().collect()
+        CONFIG.keywords.to_vec()
     } else {
         CONFIG
             .keywords
@@ -82,11 +82,10 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
                 text.to_ascii_lowercase()
             };
 
-            if keywords.iter().any(|kw| text_to_check.contains(kw)) {
-                if !ignored_keywords(entry) {
+            if keywords.iter().any(|kw| text_to_check.contains(kw))
+                && !ignored_keywords(entry) {
                     found_entries.push(entry.clone());
                 }
-            }
         }
     } else {
         for entry in &entries {
@@ -104,7 +103,7 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
 
     ManualInterventionResult {
         entries: found_entries,
-        last_successful_request: last_successful_request,
+        last_successful_request,
     }
 }
 
@@ -136,12 +135,12 @@ async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry
         Ok(response) => match response.text().await {
             Ok(text) => text,
             Err(err) => {
-                eprintln!("Failed to read response text from {}: {err}", url);
+                eprintln!("Failed to read response text from {url}: {err}");
                 return Vec::new();
             }
         },
         Err(err) => {
-            eprintln!("Failed to fetch RSS feed {}: {err}", url);
+            eprintln!("Failed to fetch RSS feed {url}: {err}");
             return Vec::new();
         }
     };
@@ -149,7 +148,7 @@ async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry
     let channel = match rss::Channel::from_str(&content) {
         Ok(ch) => ch,
         Err(err) => {
-            eprintln!("Failed to parse feed {}: {err}", url);
+            eprintln!("Failed to parse feed {url}: {err}");
             return Vec::new();
         }
     };

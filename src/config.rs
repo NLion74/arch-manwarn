@@ -1,10 +1,9 @@
+use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+use std::env;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
-use once_cell::sync::Lazy;
-use std::env;
-
 
 pub fn config_path() -> PathBuf {
     // For development: ARCH_MANWARN_CONFIG=/path/to/custom/config.toml
@@ -79,16 +78,15 @@ impl Default for Config {
 
 impl Config {
     pub fn load_from_file(path: &Path) -> Result<Self, String> {
-        let content = fs::read_to_string(path)
-            .map_err(|e| format!("Failed to read config file: {e}"))?;
+        let content =
+            fs::read_to_string(path).map_err(|e| format!("Failed to read config file: {e}"))?;
 
-        let config: Config = toml::from_str(&content)
-            .map_err(|e| format!("Failed to parse config file: {e}"))?;
+        let config: Config =
+            toml::from_str(&content).map_err(|e| format!("Failed to parse config file: {e}"))?;
 
         let updated = toml::to_string_pretty(&config)
             .map_err(|e| format!("Failed to serialize updated config: {e}"))?;
-        fs::write(path, updated)
-            .map_err(|e| format!("Failed to write updated config: {e}"))?;
+        fs::write(path, updated).map_err(|e| format!("Failed to write updated config: {e}"))?;
 
         Ok(config)
     }
@@ -121,4 +119,4 @@ impl Config {
     }
 }
 
-pub static CONFIG: Lazy<Config> = Lazy::new(|| Config::load());
+pub static CONFIG: Lazy<Config> = Lazy::new(Config::load);
