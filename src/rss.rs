@@ -48,7 +48,6 @@ pub fn ignored_keywords(entry: &NewsEntry) -> bool {
 }
 
 pub fn check_for_manual_intervention() -> ManualInterventionResult {
-    // This gives us a vector of NewsEntry structs from the archlinux.org RSS feed
     let start_time = SystemTime::now();
 
     // Check for entries with keywords that indicate manual intervention
