@@ -19,6 +19,33 @@ pub fn config_path() -> PathBuf {
     PathBuf::from("/etc/arch-manwarn/config.toml")
 }
 
+/// Recursively merge defaults into `value` for missing or invalid fields.
+/// If a field is missing or its type is wrong, it is replaced with the default.
+fn merge_defaults(value: &mut toml::Value, default: &toml::Value) {
+    match (value, default) {
+        // Both are tables: merge recursively
+        (toml::Value::Table(ref mut user_table), toml::Value::Table(default_table)) => {
+            for (key, default_val) in default_table {
+                match user_table.get_mut(key) {
+                    Some(user_val) => {
+                        // Merge recursively for nested tables
+                        merge_defaults(user_val, default_val);
+                    }
+                    None => {
+                        // Field missing: insert default
+                        user_table.insert(key.clone(), default_val.clone());
+                    }
+                }
+            }
+        }
+        // Types differ: replace with default
+        (user_val, default_val) => {
+            if user_val.type_str() != default_val.type_str() {
+                *user_val = default_val.clone();
+            }
+        }
+    }
+}
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -83,31 +110,79 @@ impl Config {
         let content =
             fs::read_to_string(path).map_err(|e| format!("Failed to read config file: {e}"))?;
 
-        let config: Config =
-            toml::from_str(&content).map_err(|e| format!("Failed to parse config file: {e}"))?;
+        let mut config_value: toml::Value = toml::from_str(&content)
+            .map_err(|e| format!("Failed to parse config file: {e}"))?;
 
-        let updated = toml::to_string_pretty(&config)
-            .map_err(|e| format!("Failed to serialize updated config: {e}"))?;
-        fs::write(path, updated).map_err(|e| format!("Failed to write updated config: {e}"))?;
+        let default = toml::Value::try_from(Config::default())
+            .expect("Default config should serialize to toml::Value");
+        
+        // Save to check if something has changed later
+        let original_value = config_value.clone();
 
-        Ok(config)
+        // Merge defaults for missing or invalid fields
+        merge_defaults(&mut config_value, &default);
+
+        // If the original value is different from the merged value,
+        // it means some fields were missing or had wrong types,
+        // and we write the updated config back to the file.
+        if &original_value != &config_value {
+            
+            // Now try to deserialize the merged value
+            let config: Config = config_value
+                .try_into()
+                .map_err(|e| format!("Failed to deserialize merged config: {e}"))?;
+
+            // Write back the merged config (with fixed/corrected fields)
+            let updated = toml::to_string_pretty(&config)
+                .map_err(|e| format!("Failed to serialize updated config: {e}"))?;
+            fs::write(path, updated).map_err(|e| format!("Failed to write updated config: {e}"))?;
+        
+            Ok(config)
+        } else {
+            // If no changes were made, just deserialize the original value
+            let config: Config = original_value
+                .try_into()
+                .map_err(|e| format!("Failed to deserialize original config: {e}"))?;
+            Ok(config)
+        }
     }
 
+    /// Loads the configuration from the given file path.
+    /// 
+    /// - If the file does not exist, it creates a new config file with default values and returns those defaults.
+    /// - If the file exists but is invalid TOML, prints an error and returns defaults (does not overwrite the file).
+    /// - If the file is valid TOML but missing or has invalid fields, those fields are reset to defaults and the file is updated.
+    /// - Returns early after creating a new config file, so no further loading or parsing is attempted in that case.
     pub fn load() -> Self {
         let path = config_path();
+
+        // If config file does not exist, generate it with defaults
+        if !path.exists() {
+            let default_config = Config::default();
+            if let Err(e) = default_config.save(&path) {
+                eprintln!(
+                    "[arch-manwarn] Failed to create default config file at {}: {e}",
+                    path.display()
+                );
+            } else {
+                eprintln!(
+                    "[arch-manwarn] Created default config file at {}",
+                    path.display()
+                );
+            }
+            return default_config;
+        }
 
         match Self::load_from_file(&path) {
             Ok(config) => config,
             Err(e) => {
                 eprintln!("[arch-manwarn] Config error: {e}");
-                eprintln!("[arch-manwarn] Using default config and regenerating...");
-
-                let default = Config::default();
-                if let Err(write_err) = default.save(&path) {
-                    eprintln!("[arch-manwarn] Failed to write default config: {write_err}");
-                }
-
-                default
+                eprintln!(
+                    "[arch-manwarn] Using default config options until the error is resolved.\n\
+                    Please fix your config file at: {}",
+                    path.display()
+                );
+                Config::default()
             }
         }
     }
