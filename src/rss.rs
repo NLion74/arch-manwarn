@@ -1,8 +1,7 @@
-use html2text::from_read;
 use crate::config::CONFIG;
-use futures::future::join_all;
+use html2text::from_read;
 use reqwest::Client;
-use feed_rs::parser;
+use std::str::FromStr as _;
 use std::time::Duration;
 use std::time::SystemTime;
 
@@ -48,17 +47,17 @@ pub fn ignored_keywords(entry: &NewsEntry) -> bool {
     false
 }
 
-
-pub async fn check_for_manual_intervention() -> ManualInterventionResult {
+pub fn check_for_manual_intervention() -> ManualInterventionResult {
     // This gives us a vector of NewsEntry structs from the archlinux.org RSS feed
     let start_time = SystemTime::now();
-    let entries = get_entries_from_feeds();
 
     // Check for entries with keywords that indicate manual intervention
     let keywords: Vec<String> = if CONFIG.case_sensitive {
-        CONFIG.keywords.iter().cloned().collect()
+        CONFIG.keywords.to_vec()
     } else {
-        CONFIG.keywords.iter()
+        CONFIG
+            .keywords
+            .iter()
             .map(|kw| kw.to_ascii_lowercase())
             .collect()
     };
@@ -66,10 +65,17 @@ pub async fn check_for_manual_intervention() -> ManualInterventionResult {
 
     // Biggest performance overhead is here:
     // This is where the actual network request to the feed is awaited
-    let entries = entries.await;
+    // Include tokio runtime initializing
+    let entries = get_entries_from_feeds();
+
+    let last_successful_request = if !entries.is_empty() {
+        Some(start_time)
+    } else {
+        None
+    };
 
     if !CONFIG.match_all_entries {
-        for entry in &entries {
+        for entry in entries {
             let text = if CONFIG.include_summary_in_query {
                 format!("{} {}", entry.title, entry.summary)
             } else {
@@ -82,32 +88,25 @@ pub async fn check_for_manual_intervention() -> ManualInterventionResult {
                 text.to_ascii_lowercase()
             };
 
-            if keywords.iter().any(|kw| text_to_check.contains(kw)) {
-                if !ignored_keywords(entry) {
-                    found_entries.push(entry.clone());
-                }
+            if keywords.iter().any(|kw| text_to_check.contains(kw)) && !ignored_keywords(&entry) {
+                found_entries.push(entry);
             }
         }
     } else {
-        for entry in &entries {
-            if !ignored_keywords(entry) {
-                    found_entries.push(entry.clone());
+        for entry in entries {
+            if !ignored_keywords(&entry) {
+                found_entries.push(entry);
             }
         }
     }
-
-    let last_successful_request = if !entries.is_empty() {
-        Some(start_time)
-    } else {
-        None
-    };
 
     ManualInterventionResult {
         entries: found_entries,
-        last_successful_request: last_successful_request,
+        last_successful_request,
     }
 }
 
+#[tokio::main]
 pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
     let client = Client::builder()
         .user_agent("arch-manwarn")
@@ -116,51 +115,58 @@ pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
         .expect("Failed to build HTTP client");
 
     // Create a vector of futures, one for each feed URL
-    let fetches = CONFIG.rss_feed_urls.iter().map(|url| {
-        fetch_and_parse_single_feed(&client, url)
-    });
+    let fetches = CONFIG
+        .rss_feed_urls
+        .iter()
+        .map(|url| fetch_and_parse_single_feed(client.clone(), url));
 
     // Await all fetches concurrently
-    let results: Vec<Vec<NewsEntry>> = join_all(fetches).await;
+    let results = tokio::task::JoinSet::from_iter(fetches).join_all().await;
 
     // Flatten all entries into one Vec
     results.into_iter().flatten().collect()
 }
 
-async fn fetch_and_parse_single_feed(client: &Client, url: &str) -> Vec<NewsEntry> {
+async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry> {
     let content = match client.get(url).send().await {
         Ok(response) => match response.text().await {
             Ok(text) => text,
             Err(err) => {
-                eprintln!("Failed to read response text from {}: {err}", url);
+                eprintln!("Failed to read response text from {url}: {err}");
                 return Vec::new();
             }
         },
         Err(err) => {
-            eprintln!("Failed to fetch RSS feed {}: {err}", url);
+            eprintln!("Failed to fetch RSS feed {url}: {err}");
             return Vec::new();
         }
     };
 
-    let feed = match parser::parse(content.as_bytes()) {
-        Ok(feed) => feed,
+    let channel = match rss::Channel::from_str(&content) {
+        Ok(ch) => ch,
         Err(err) => {
-            eprintln!("Failed to parse feed {}: {err}", url);
+            eprintln!("Failed to parse feed {url}: {err}");
             return Vec::new();
         }
     };
-
-    feed.entries
-        .iter()
+    channel
+        .items
+        .into_iter()
         .map(|entry| {
-            let title = entry.title.as_ref().map_or("[No title provided]", |t| t.content.as_str());
-            let summary = entry.summary.as_ref().map_or("[No summary provided]", |s| s.content.as_str());
-            let link = entry.links.get(0).map_or("[No link provided]", |l| l.href.as_str());
+            let title = entry.title.unwrap_or("[No title provided]".to_owned());
+            let summary = match (entry.content, entry.description) {
+                (None, None) => "[No summary provided]".to_owned(),
+                (Some(c), Some(d)) if c.len() > d.len() => c,
+                // _ contains both None and Some if description not less than content
+                (_, Some(s)) | (Some(s), None) => s,
+            };
+            let link = entry.link.unwrap_or("[No link provided]".to_owned());
 
             NewsEntry {
-                title: title.to_string(),
-                summary: from_read(summary.as_bytes(), 80).unwrap_or_else(|_| String::from("[could not parse summary]")),
-                link: link.to_string(),
+                title,
+                summary: from_read(summary.as_bytes(), 80)
+                    .unwrap_or_else(|_| String::from("[could not parse summary]")),
+                link,
             }
         })
         .collect()
