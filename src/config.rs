@@ -1,5 +1,6 @@
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
+#[cfg(debug_assertions)]
 use std::env;
 use std::fs;
 use std::io;
@@ -43,8 +44,6 @@ pub struct Config {
 
     /// URLs for the RSS feeds
     pub rss_feed_urls: Vec<String>,
-    /// URLs for the RSS feeds(take content as summary rather description)
-    pub rss_feed_urls_content: Vec<String>,
 
     /// Whether to show summary on check
     /// If false, only title and link will be shown
@@ -65,7 +64,6 @@ impl Default for Config {
         Self {
             cache_path: "/var/cache/arch-manwarn.json".to_string(),
             rss_feed_urls: vec!["https://archlinux.org/feeds/news/".to_string()],
-            rss_feed_urls_content: vec![],
             keywords: vec!["manual intervention".to_string()],
             ignored_keywords: vec![],
             case_sensitive: false,

@@ -115,28 +115,19 @@ pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
         .expect("Failed to build HTTP client");
 
     // Create a vector of futures, one for each feed URL
-    let fetch_descriptions = CONFIG
+    let fetches = CONFIG
         .rss_feed_urls
         .iter()
-        .map(|url| fetch_and_parse_single_feed(client.clone(), url, false));
-    let fetch_contents = CONFIG
-        .rss_feed_urls_content
-        .iter()
-        .map(|url| fetch_and_parse_single_feed(client.clone(), url, true));
-    let fetches = tokio::task::JoinSet::from_iter(fetch_contents.chain(fetch_descriptions));
+        .map(|url| fetch_and_parse_single_feed(client.clone(), url));
 
     // Await all fetches concurrently
-    let results = fetches.join_all().await;
+    let results = tokio::task::JoinSet::from_iter(fetches).join_all().await;
 
     // Flatten all entries into one Vec
     results.into_iter().flatten().collect()
 }
 
-async fn fetch_and_parse_single_feed(
-    client: Client,
-    url: &str,
-    using_content: bool,
-) -> Vec<NewsEntry> {
+async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry> {
     let content = match client.get(url).send().await {
         Ok(response) => match response.text().await {
             Ok(text) => text,
@@ -163,12 +154,12 @@ async fn fetch_and_parse_single_feed(
         .into_iter()
         .map(|entry| {
             let title = entry.title.unwrap_or("[No title provided]".to_owned());
-            let summary = if using_content {
-                entry.content
-            } else {
-                entry.description
+            let summary = match (entry.content, entry.description) {
+                (None, None) => "[No summary provided]".to_owned(),
+                (Some(c), Some(d)) if c.len() > d.len() => c,
+                // _ contains both None and Some if description not less than content
+                (_, Some(s)) | (Some(s), None) => s,
             };
-            let summary = summary.as_deref().unwrap_or("[No summary provided]");
             let link = entry.link.unwrap_or("[No link provided]".to_owned());
 
             NewsEntry {
