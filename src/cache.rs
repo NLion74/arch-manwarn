@@ -78,6 +78,9 @@ pub fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
     let result = rss::check_for_manual_intervention();
     let cache_path = get_cache_path();
 
+    // Determining whether this is the first run
+    // by checking if the cache file exists
+    let first_run = !cache_path.exists();
     let mut cache_file = load_cache(&cache_path);
 
     // Only update cache if the result contains a successful request
@@ -156,10 +159,6 @@ pub fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
     if cache_changed {
         save_cache(&cache_path, cache_file);
     }
-
-    // Determining whether this is the first run
-    // by checking if the cache file exists
-    let first_run = !cache_path.exists();
 
     // If this is the first run, return an empty vector
     // Otherwise, return the new entries found
