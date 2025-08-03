@@ -119,23 +119,51 @@ pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
 }
 
 async fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
-    let content = match surf::get(url)
-        .header("User-Agent", "arch-manwarn")
-        .send()
-        .await
-    {
-        Ok(mut response) => match response.body_string().await {
-            Ok(text) => text,
-            Err(err) => {
-                eprintln!("Failed to read response text from {url}: {err}");
+    let mut current_url = url.to_string();
+
+    let content = {
+        let mut redirects = 0;
+        loop {
+            let mut response = match surf::get(&current_url)
+                .header("User-Agent", "arch-manwarn")
+                .send()
+                .await
+            {
+                Ok(resp) => resp,
+                Err(err) => {
+                    eprintln!("Failed to fetch RSS feed {current_url}: {err}");
+                    return Vec::new();
+                }
+            };
+
+            if response.status().is_redirection() {
+                if redirects >= CONFIG.max_redirects {
+                    eprintln!("Too many redirects for {current_url}");
+                    return Vec::new();
+                }
+                if let Some(location) = response.header("Location").and_then(|vals| vals.get(0)) {
+                    current_url = location.to_string();
+                    redirects += 1;
+                    continue;
+                } else {
+                    eprintln!("Redirect without Location header for {current_url}");
+                    return Vec::new();
+                }
+            } else if response.status().is_success() {
+                match response.body_string().await {
+                    Ok(text) => break text,
+                    Err(err) => {
+                        eprintln!("Failed to read response text from {current_url}: {err}");
+                        return Vec::new();
+                    }
+                }
+            } else {
+                eprintln!("Failed to fetch RSS feed {current_url}: HTTP status {}", response.status());
                 return Vec::new();
             }
-        },
-        Err(err) => {
-            eprintln!("Failed to fetch RSS feed {url}: {err}");
-            return Vec::new();
         }
     };
+
 
     let channel = match rss::Channel::from_str(&content) {
         Ok(ch) => ch,
