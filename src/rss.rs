@@ -1,8 +1,6 @@
 use crate::config::CONFIG;
-use html2text::from_read;
-use reqwest::Client;
+use nanohtml2text::html2text;
 use std::str::FromStr as _;
-use std::time::Duration;
 use std::time::SystemTime;
 
 #[derive(Debug, Clone)]
@@ -107,17 +105,11 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
 
 #[tokio::main]
 pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
-    let client = Client::builder()
-        .user_agent("arch-manwarn")
-        .timeout(Duration::from_secs(10))
-        .build()
-        .expect("Failed to build HTTP client");
-
     // Create a vector of futures, one for each feed URL
     let fetches = CONFIG
         .rss_feed_urls
         .iter()
-        .map(|url| fetch_and_parse_single_feed(client.clone(), url));
+        .map(|url| fetch_and_parse_single_feed(url));
 
     // Await all fetches concurrently
     let results = tokio::task::JoinSet::from_iter(fetches).join_all().await;
@@ -126,9 +118,13 @@ pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
     results.into_iter().flatten().collect()
 }
 
-async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry> {
-    let content = match client.get(url).send().await {
-        Ok(response) => match response.text().await {
+async fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
+    let content = match surf::get(url)
+        .header("User-Agent", "arch-manwarn")
+        .send()
+        .await
+    {
+        Ok(mut response) => match response.body_string().await {
             Ok(text) => text,
             Err(err) => {
                 eprintln!("Failed to read response text from {url}: {err}");
@@ -148,23 +144,22 @@ async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry
             return Vec::new();
         }
     };
+
     channel
         .items
         .into_iter()
         .map(|entry| {
-            let title = entry.title.unwrap_or("[No title provided]".to_owned());
+            let title = entry.title.unwrap_or_else(|| "[No title provided]".to_string());
             let summary = match (entry.content, entry.description) {
-                (None, None) => "[No summary provided]".to_owned(),
+                (None, None) => "[No summary provided]".to_string(),
                 (Some(c), Some(d)) if c.len() > d.len() => c,
-                // _ contains both None and Some if description not less than content
                 (_, Some(s)) | (Some(s), None) => s,
             };
-            let link = entry.link.unwrap_or("[No link provided]".to_owned());
+            let link = entry.link.unwrap_or_else(|| "[No link provided]".to_string());
 
             NewsEntry {
                 title,
-                summary: from_read(summary.as_bytes(), 80)
-                    .unwrap_or_else(|_| String::from("[could not parse summary]")),
+                summary: html2text(&summary),
                 link,
             }
         })
