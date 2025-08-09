@@ -1,7 +1,5 @@
 use once_cell::sync::Lazy;
 use serde::{Deserialize, Serialize};
-#[cfg(debug_assertions)]
-use std::env;
 use std::fs;
 use std::io;
 use std::path::{Path, PathBuf};
@@ -9,7 +7,7 @@ use std::path::{Path, PathBuf};
 pub fn config_path() -> PathBuf {
     // For development: ARCH_MANWARN_CONFIG=/path/to/custom/config.toml
     #[cfg(debug_assertions)]
-    if let Ok(env_path) = env::var("ARCH_MANWARN_CONFIG") {
+    if let Ok(env_path) = std::env::var("ARCH_MANWARN_CONFIG") {
         return PathBuf::from(env_path);
     }
 
@@ -72,6 +70,9 @@ pub struct Config {
     /// URLs for the RSS feeds
     pub rss_feed_urls: Vec<String>,
 
+    /// Maximum number of redirects to follow
+    pub max_redirects: u32,
+
     /// Whether to show summary on check
     /// If false, only title and link will be shown
     pub show_summary: bool,
@@ -91,6 +92,7 @@ impl Default for Config {
         Self {
             cache_path: "/var/cache/arch-manwarn.json".to_string(),
             rss_feed_urls: vec!["https://archlinux.org/feeds/news/".to_string()],
+            max_redirects: 5,
             keywords: vec!["manual intervention".to_string()],
             ignored_keywords: vec![],
             case_sensitive: false,

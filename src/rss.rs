@@ -1,8 +1,6 @@
 use crate::config::CONFIG;
-use html2text::from_read;
-use reqwest::Client;
+use nanohtml2text::html2text;
 use std::str::FromStr as _;
-use std::time::Duration;
 use std::time::SystemTime;
 
 #[derive(Debug, Clone)]
@@ -107,17 +105,11 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
 
 #[tokio::main]
 pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
-    let client = Client::builder()
-        .user_agent("arch-manwarn")
-        .timeout(Duration::from_secs(10))
-        .build()
-        .expect("Failed to build HTTP client");
-
     // Create a vector of futures, one for each feed URL
     let fetches = CONFIG
         .rss_feed_urls
         .iter()
-        .map(|url| fetch_and_parse_single_feed(client.clone(), url));
+        .map(|url| fetch_and_parse_single_feed(url));
 
     // Await all fetches concurrently
     let results = tokio::task::JoinSet::from_iter(fetches).join_all().await;
@@ -126,20 +118,52 @@ pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
     results.into_iter().flatten().collect()
 }
 
-async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry> {
-    let content = match client.get(url).send().await {
-        Ok(response) => match response.text().await {
-            Ok(text) => text,
-            Err(err) => {
-                eprintln!("Failed to read response text from {url}: {err}");
+async fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
+    let mut current_url = url.to_string();
+
+    let content = {
+        let mut redirects = 0;
+        loop {
+            let mut response = match surf::get(&current_url)
+                .header("User-Agent", "arch-manwarn")
+                .send()
+                .await
+            {
+                Ok(resp) => resp,
+                Err(err) => {
+                    eprintln!("Failed to fetch RSS feed {current_url}: {err}");
+                    return Vec::new();
+                }
+            };
+
+            if response.status().is_redirection() {
+                if redirects >= CONFIG.max_redirects {
+                    eprintln!("Too many redirects for {current_url}");
+                    return Vec::new();
+                }
+                if let Some(location) = response.header("Location").and_then(|vals| vals.get(0)) {
+                    current_url = location.to_string();
+                    redirects += 1;
+                    continue;
+                } else {
+                    eprintln!("Redirect without Location header for {current_url}");
+                    return Vec::new();
+                }
+            } else if response.status().is_success() {
+                match response.body_string().await {
+                    Ok(text) => break text,
+                    Err(err) => {
+                        eprintln!("Failed to read response text from {current_url}: {err}");
+                        return Vec::new();
+                    }
+                }
+            } else {
+                eprintln!("Failed to fetch RSS feed {current_url}: HTTP status {}", response.status());
                 return Vec::new();
             }
-        },
-        Err(err) => {
-            eprintln!("Failed to fetch RSS feed {url}: {err}");
-            return Vec::new();
         }
     };
+
 
     let channel = match rss::Channel::from_str(&content) {
         Ok(ch) => ch,
@@ -148,23 +172,22 @@ async fn fetch_and_parse_single_feed(client: Client, url: &str) -> Vec<NewsEntry
             return Vec::new();
         }
     };
+
     channel
         .items
         .into_iter()
         .map(|entry| {
-            let title = entry.title.unwrap_or("[No title provided]".to_owned());
+            let title = entry.title.unwrap_or_else(|| "[No title provided]".to_string());
             let summary = match (entry.content, entry.description) {
-                (None, None) => "[No summary provided]".to_owned(),
+                (None, None) => "[No summary provided]".to_string(),
                 (Some(c), Some(d)) if c.len() > d.len() => c,
-                // _ contains both None and Some if description not less than content
                 (_, Some(s)) | (Some(s), None) => s,
             };
-            let link = entry.link.unwrap_or("[No link provided]".to_owned());
+            let link = entry.link.unwrap_or_else(|| "[No link provided]".to_string());
 
             NewsEntry {
                 title,
-                summary: from_read(summary.as_bytes(), 80)
-                    .unwrap_or_else(|_| String::from("[could not parse summary]")),
+                summary: html2text(&summary),
                 link,
             }
         })

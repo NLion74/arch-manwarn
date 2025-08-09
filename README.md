@@ -5,7 +5,7 @@
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](https://unlicense.org/)
 [![GitHub release](https://img.shields.io/github/v/release/NLion74/arch-manwarn)](https://github.com/NLion74/arch-manwarn/releases)
 
-**arch-manwarn** is a fast, [configurable](#configuration) and lightweight Rust-Based pacman hook that detects [Arch Linux News](https://archlinux.org/news) requiring manual intervention, and blocks upgrades **only when relevant** to your system.
+**arch-manwarn** is a small, fast and [configurable](#configuration) Rust-Based pacman hook that detects [Arch Linux News](https://archlinux.org/news) requiring manual intervention, and blocks upgrades **only when relevant** to your system.
 
 It’s designed to stay quiet unless action is actually needed, helping you avoid breakage without adding unnecessary noise.
 
@@ -118,6 +118,9 @@ rss_feed_urls = [
     "https://archlinux.org/feeds/news/",
 ]
 
+# Maximum number of redirects to follow on rss feed fetch
+max_redirects = 5
+
 # Display summaries for matching news posts
 show_summary = false
 
@@ -133,31 +136,23 @@ cache_path = "/var/cache/arch-manwarn.json"
 
 ## Development
 
-A mirror of the AUR PKGBUILD can be found [here](https://github.com/NLion74/arch-manwarn-aur)
+A mirror of the AUR PKGBUILD is available [here](https://github.com/NLion74/arch-manwarn-aur).
 
-Due to permission issues when running the program manually instead of via the arch-manwarn.hook, you may need to change the cache path from /var/cache. You can do this like so:
-
-```
-
-ARCH_NEWS_CACHE_PATH=./arch-manwarn-cache.json ARCH_MANWARN_CONFIG=./arch-manwarn-config.toml cargo run
+Due to permission issues when running the program manually instead of via the arch-manwarn.hook, you may need to change the cache and config path:
 
 ```
+ARCH_NEWS_CACHE_PATH=./arch-manwarn-cache.json \
+ARCH_MANWARN_CONFIG=./arch-manwarn-config.toml \
+cargo run
+```
 
-To install locally
+Local install for testing:
 
-1. Build the release binary:
-   `cargo build --release`
-
-2. Copy binary to `/usr/bin/arch-manwarn`
-
-    ```
-    sudo install -Dm755 target/release/arch-manwarn /usr/bin/arch-manwarn
-    ```
-
-3. Copy `hooks/arch-manwarn.hook` to `/etc/pacman.d/hooks/`
-    ```
-    sudo install -Dm644 hooks/arch-manwarn.hook /usr/share/libalpm/hooks/arch-manwarn.hook
-    ```
+```
+cargo build --release
+sudo install -Dm755 target/release/arch-manwarn /usr/bin/arch-manwarn
+sudo install -Dm644 hooks/arch-manwarn.hook /usr/share/libalpm/hooks/arch-manwarn.hook
+```
 
 ## Contribute & Support
 
