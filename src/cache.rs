@@ -12,12 +12,11 @@ pub fn get_cache_path() -> PathBuf {
             .map(PathBuf::from)
             .unwrap_or_else(|| CONFIG.cache_path.clone().into())
     }
-    
+
     #[cfg(not(debug_assertions))]
     {
         CONFIG.cache_path.clone().into()
     }
-
 }
 
 const CACHE_VERSION: u32 = 1;

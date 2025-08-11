@@ -1,6 +1,7 @@
 use crate::config::CONFIG;
 use nanohtml2text::html2text;
-use std::str::FromStr as _;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use std::io::BufReader;
 use std::time::SystemTime;
 
 #[derive(Debug, Clone)]
@@ -103,31 +104,27 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
     }
 }
 
-#[tokio::main]
-pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
+pub fn get_entries_from_feeds() -> Vec<NewsEntry> {
     // Create a vector of futures, one for each feed URL
     let fetches = CONFIG
         .rss_feed_urls
-        .iter()
+        .par_iter()// multithreading here
         .map(|url| fetch_and_parse_single_feed(url));
 
     // Await all fetches concurrently
-    let results = tokio::task::JoinSet::from_iter(fetches).join_all().await;
-
     // Flatten all entries into one Vec
-    results.into_iter().flatten().collect()
+    fetches.flatten().collect()
 }
 
-async fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
+fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
     let mut current_url = url.to_string();
 
     let content = {
         let mut redirects = 0;
         loop {
-            let mut response = match surf::get(&current_url)
-                .header("User-Agent", "arch-manwarn")
-                .send()
-                .await
+            let response = match minreq::get(url)
+                .with_header("User-Agent", "arch-manwarn")
+                .send_lazy()
             {
                 Ok(resp) => resp,
                 Err(err) => {
@@ -136,12 +133,12 @@ async fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
                 }
             };
 
-            if response.status().is_redirection() {
+            if http_status_code::is_redirection(response.status_code) {
                 if redirects >= CONFIG.max_redirects {
                     eprintln!("Too many redirects for {current_url}");
                     return Vec::new();
                 }
-                if let Some(location) = response.header("Location").and_then(|vals| vals.get(0)) {
+                if let Some(location) = response.headers.get("Location") {
                     current_url = location.to_string();
                     redirects += 1;
                     continue;
@@ -149,26 +146,22 @@ async fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
                     eprintln!("Redirect without Location header for {current_url}");
                     return Vec::new();
                 }
-            } else if response.status().is_success() {
-                match response.body_string().await {
-                    Ok(text) => break text,
-                    Err(err) => {
-                        eprintln!("Failed to read response text from {current_url}: {err}");
-                        return Vec::new();
-                    }
-                }
+            } else if http_status_code::is_success(response.status_code) {
+                break response;
             } else {
-                eprintln!("Failed to fetch RSS feed {current_url}: HTTP status {}", response.status());
+                eprintln!(
+                    "Failed to fetch RSS feed {current_url}: HTTP status {}",
+                    response.status_code
+                );
                 return Vec::new();
             }
         }
     };
 
-
-    let channel = match rss::Channel::from_str(&content) {
+    let channel = match rss::Channel::read_from(BufReader::new(content)) {
         Ok(ch) => ch,
         Err(err) => {
-            eprintln!("Failed to parse feed {url}: {err}");
+            eprintln!("Failed to read/parse feed {url}: {err}");
             return Vec::new();
         }
     };
@@ -177,13 +170,17 @@ async fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
         .items
         .into_iter()
         .map(|entry| {
-            let title = entry.title.unwrap_or_else(|| "[No title provided]".to_string());
+            let title = entry
+                .title
+                .unwrap_or_else(|| "[No title provided]".to_string());
             let summary = match (entry.content, entry.description) {
                 (None, None) => "[No summary provided]".to_string(),
                 (Some(c), Some(d)) if c.len() > d.len() => c,
                 (_, Some(s)) | (Some(s), None) => s,
             };
-            let link = entry.link.unwrap_or_else(|| "[No link provided]".to_string());
+            let link = entry
+                .link
+                .unwrap_or_else(|| "[No link provided]".to_string());
 
             NewsEntry {
                 title,
@@ -192,4 +189,41 @@ async fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
             }
         })
         .collect()
+}
+
+#[allow(dead_code)]
+mod http_status_code {
+    // codes here are borrowed from https://github.com/hyperium/http/blob/master/src/status.rs
+
+    type StatusCode = i32;
+
+    /// Check if status is within 100-199.
+    #[inline]
+    pub fn is_informational(code: StatusCode) -> bool {
+        (100..200).contains(&code)
+    }
+
+    /// Check if status is within 200-299.
+    #[inline]
+    pub fn is_success(code: StatusCode) -> bool {
+        (200..300).contains(&code)
+    }
+
+    /// Check if status is within 300-399.
+    #[inline]
+    pub fn is_redirection(code: StatusCode) -> bool {
+        (300..400).contains(&code)
+    }
+
+    /// Check if status is within 400-499.
+    #[inline]
+    pub fn is_client_error(code: StatusCode) -> bool {
+        (400..500).contains(&code)
+    }
+
+    /// Check if status is within 500-599.
+    #[inline]
+    pub fn is_server_error(code: StatusCode) -> bool {
+        (500..600).contains(&code)
+    }
 }
