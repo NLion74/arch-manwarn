@@ -158,12 +158,14 @@ async fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
                     }
                 }
             } else {
-                eprintln!("Failed to fetch RSS feed {current_url}: HTTP status {}", response.status());
+                eprintln!(
+                    "Failed to fetch RSS feed {current_url}: HTTP status {}",
+                    response.status()
+                );
                 return Vec::new();
             }
         }
     };
-
 
     let channel = match rss::Channel::from_str(&content) {
         Ok(ch) => ch,
@@ -177,13 +179,17 @@ async fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
         .items
         .into_iter()
         .map(|entry| {
-            let title = entry.title.unwrap_or_else(|| "[No title provided]".to_string());
+            let title = entry
+                .title
+                .unwrap_or_else(|| "[No title provided]".to_string());
             let summary = match (entry.content, entry.description) {
                 (None, None) => "[No summary provided]".to_string(),
                 (Some(c), Some(d)) if c.len() > d.len() => c,
                 (_, Some(s)) | (Some(s), None) => s,
             };
-            let link = entry.link.unwrap_or_else(|| "[No link provided]".to_string());
+            let link = entry
+                .link
+                .unwrap_or_else(|| "[No link provided]".to_string());
 
             NewsEntry {
                 title,

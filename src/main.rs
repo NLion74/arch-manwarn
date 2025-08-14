@@ -1,7 +1,7 @@
 mod cache;
 mod config;
 mod rss;
-use crate::config::CONFIG;
+use crate::{cache::CacheFile, config::CONFIG};
 
 fn main() {
     let mut args = std::env::args();
@@ -14,7 +14,8 @@ fn main() {
                  arch-manwarn            - Shows this short message to confirm installation.\n\
                  arch-manwarn check      - Used internally by the pacman hook to check for new matching entries.\n\
                  arch-manwarn status     - Shows a summary of cached matching entries, including how long ago they were first and last seen.\n\
-                 arch-manwarn read       - Manually marks all unread items as read (usually not needed unless configuration is adjusted).\n"
+                 arch-manwarn read       - Manually marks all unread items as read (usually not needed unless configuration is adjusted).\n
+                 arch-manwarn bypass     - Bypass next check"
             );
         }
 
@@ -58,13 +59,12 @@ fn main() {
         }
 
         Some("status") => {
-            let cache_path = cache::get_cache_path();
-            let Ok(_data) = std::fs::read_to_string(&cache_path) else {
+            if !CacheFile::exists() {
                 println!("No cache found. Run `arch-manwarn check` first.");
                 return;
-            };
+            }
 
-            let cache_file: cache::CacheFile = cache::load_cache(&cache_path);
+            let cache_file: CacheFile = CacheFile::load();
 
             if cache_file.entries.is_empty() {
                 println!("No cached matching entries found.");
@@ -108,6 +108,21 @@ fn main() {
             } else {
                 println!("\nLast successful feed request: never.");
             }
+        }
+
+        Some("bypass") => {
+            if !CacheFile::exists() {
+                println!("No cache found. Run `arch-manwarn check` first.");
+                return;
+            }
+
+            let mut cache_file: CacheFile = CacheFile::load();
+
+            cache_file.bypass_next_check = true;
+
+            cache_file.save();
+
+            println!("Next check will be bypassed!")
         }
 
         Some(cmd) => {

@@ -1,24 +1,8 @@
 use crate::config::CONFIG;
 use crate::rss;
 use std::fs;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::time::{SystemTime, UNIX_EPOCH};
-
-pub fn get_cache_path() -> PathBuf {
-    #[cfg(debug_assertions)]
-    {
-        std::env::var("ARCH_NEWS_CACHE_PATH")
-            .ok()
-            .map(PathBuf::from)
-            .unwrap_or_else(|| CONFIG.cache_path.clone().into())
-    }
-    
-    #[cfg(not(debug_assertions))]
-    {
-        CONFIG.cache_path.clone().into()
-    }
-
-}
 
 const CACHE_VERSION: u32 = 1;
 
@@ -38,6 +22,9 @@ pub struct CacheFile {
 
     #[serde(default)]
     pub last_successful_request: Option<SystemTime>,
+
+    #[serde(default)]
+    pub bypass_next_check: bool,
 }
 
 impl Default for CacheFile {
@@ -46,6 +33,54 @@ impl Default for CacheFile {
             entries: Vec::new(),
             cache_version: CACHE_VERSION,
             last_successful_request: None,
+            bypass_next_check: false,
+        }
+    }
+}
+
+impl CacheFile {
+    fn path() -> PathBuf {
+        #[cfg(debug_assertions)]
+        {
+            std::env::var("ARCH_NEWS_CACHE_PATH")
+                .ok()
+                .map(PathBuf::from)
+                .unwrap_or_else(|| CONFIG.cache_path.clone().into())
+        }
+
+        #[cfg(not(debug_assertions))]
+        {
+            CONFIG.cache_path.clone().into()
+        }
+    }
+
+    pub fn exists() -> bool {
+        Self::path().exists()
+    }
+
+    pub fn load() -> Self {
+        // Load previously cached entries
+        let cache_file: CacheFile = if let Ok(data) = fs::read_to_string(Self::path()) {
+            serde_json::from_str(&data).unwrap_or_default()
+        } else {
+            CacheFile::default()
+        };
+
+        cache_file
+    }
+
+    pub fn save(self) {
+        let cache_path = Self::path();
+        if let Some(parent) = cache_path.parent() {
+            if let Err(e) = fs::create_dir_all(parent) {
+                eprintln!("Failed to create cache directory {parent:?}: {e}");
+            }
+        }
+        if let Err(e) = fs::write(&cache_path, serde_json::to_string_pretty(&self).unwrap()) {
+            eprintln!("Failed to write cache file {}: {e}", cache_path.display());
+            eprintln!(
+                "Try running the program as root or with sudo if you want to use /var/cache."
+            );
         }
     }
 }
@@ -57,40 +92,21 @@ pub fn current_unix_time() -> u64 {
         .as_secs()
 }
 
-fn save_cache(cache_path: &Path, cache_file: CacheFile) {
-    if let Some(parent) = cache_path.parent() {
-        if let Err(e) = fs::create_dir_all(parent) {
-            eprintln!("Failed to create cache directory {parent:?}: {e}");
-        }
-    }
-    if let Err(e) = fs::write(
-        cache_path,
-        serde_json::to_string_pretty(&cache_file).unwrap(),
-    ) {
-        eprintln!("Failed to write cache file {}: {e}", cache_path.display());
-        eprintln!("Try running the program as root or with sudo if you want to use /var/cache.");
-    }
-}
-
-pub fn load_cache(cache_path: &Path) -> CacheFile {
-    // Load previously cached entries
-    let cache_file: CacheFile = if let Ok(data) = fs::read_to_string(cache_path) {
-        serde_json::from_str(&data).unwrap_or_default()
-    } else {
-        CacheFile::default()
-    };
-
-    cache_file
-}
-
 pub fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
-    let result = rss::check_for_manual_intervention();
-    let cache_path = get_cache_path();
-
     // Determining whether this is the first run
     // by checking if the cache file exists
-    let first_run = !cache_path.exists();
-    let mut cache_file = load_cache(&cache_path);
+    let first_run = !CacheFile::exists();
+    let mut cache_file = CacheFile::load();
+
+    // Bypass this check, remove this flag
+    if !first_run && cache_file.bypass_next_check {
+        cache_file.bypass_next_check = false;
+        cache_file.save();
+        println!("This check is bypassed!");
+        return vec![];
+    }
+
+    let result = rss::check_for_manual_intervention();
 
     // Only update cache if the result contains a successful request
     if let Some(success_timestamp) = result.last_successful_request {
@@ -166,7 +182,7 @@ pub fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
 
     // If updated, save the cache
     if cache_changed {
-        save_cache(&cache_path, cache_file);
+        cache_file.save();
     }
 
     // If this is the first run, return an empty vector
