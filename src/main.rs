@@ -108,6 +108,10 @@ fn main() {
             } else {
                 println!("\nLast successful feed request: never.");
             }
+
+            if cache_file.bypass_next_check {
+                println!("\nWarning:Next check will be bypassed");
+            }
         }
 
         Some("bypass") => {
@@ -132,7 +136,8 @@ fn main() {
                 arch-manwarn            - Shows a short confirmation message.
                 arch-manwarn check      - Checks for new matching Arch news entries.
                 arch-manwarn status     - Displays summary of cached entries.
-                arch-manwarn read       - Marks all entries as read."
+                arch-manwarn read       - Marks all entries as read.
+                arch-manwarn bypass     - Bypass next check"
             );
             std::process::exit(2);
         }

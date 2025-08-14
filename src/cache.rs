@@ -60,8 +60,8 @@ impl CacheFile {
 
     pub fn load() -> Self {
         // Load previously cached entries
-        let cache_file: CacheFile = if let Ok(data) = fs::read_to_string(Self::path()) {
-            serde_json::from_str(&data).unwrap_or_default()
+        let cache_file: CacheFile = if let Ok(rdr) = fs::File::open(Self::path()) {
+            serde_json::from_reader(rdr).unwrap_or_default()
         } else {
             CacheFile::default()
         };
@@ -137,13 +137,11 @@ pub fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
 
     for entry in result.entries {
         // Compare the title of the new entry with cached entries
-        if cached_entries.iter().any(|e| e.title == entry.title) {
+        if let Some(cached_entry) = cached_entries.iter_mut().find(|e| e.title == entry.title) {
             // If the entry already exists in the cache,
             // update its last_seen timestamp
-            if let Some(cached_entry) = cached_entries.iter_mut().find(|e| e.title == entry.title) {
-                cached_entry.last_seen = now;
-                cache_changed = true;
-            }
+            cached_entry.last_seen = now;
+            cache_changed = true;
         } else {
             // If the title is not found in cached entries, push it
             // to new_entries and cached_entries
