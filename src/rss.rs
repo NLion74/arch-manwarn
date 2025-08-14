@@ -108,7 +108,7 @@ pub fn get_entries_from_feeds() -> Vec<NewsEntry> {
     // Create a vector of futures, one for each feed URL
     let fetches = CONFIG
         .rss_feed_urls
-        .par_iter()// multithreading here
+        .par_iter() // multithreading here
         .map(|url| fetch_and_parse_single_feed(url));
 
     // Await all fetches concurrently
@@ -122,7 +122,9 @@ fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
     let content = {
         let mut redirects = 0;
         loop {
-            let response = match minreq::get(url)
+            let response = match minreq::get(&current_url)
+                .with_follow_redirects(false)
+                .with_timeout(10)
                 .with_header("User-Agent", "arch-manwarn")
                 .send_lazy()
             {
