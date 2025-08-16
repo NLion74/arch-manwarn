@@ -5,19 +5,14 @@ use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 pub fn get_cache_path() -> PathBuf {
-    #[cfg(debug_assertions)]
-    {
+    if cfg!(debug_assertions) {
         std::env::var("ARCH_NEWS_CACHE_PATH")
             .ok()
             .map(PathBuf::from)
             .unwrap_or_else(|| CONFIG.cache_path.clone().into())
-    }
-    
-    #[cfg(not(debug_assertions))]
-    {
+    } else {
         CONFIG.cache_path.clone().into()
     }
-
 }
 
 const CACHE_VERSION: u32 = 1;
@@ -119,12 +114,17 @@ pub fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
     let mut cache_changed = false;
     let now = current_unix_time();
 
-    for entry in result.entries {
+    for rss::NewsEntry {
+        title,
+        summary,
+        link,
+    } in result.entries
+    {
         // Compare the title of the new entry with cached entries
-        if cached_entries.iter().any(|e| e.title == entry.title) {
+        if cached_entries.iter().any(|e| e.title == title) {
             // If the entry already exists in the cache,
             // update its last_seen timestamp
-            if let Some(cached_entry) = cached_entries.iter_mut().find(|e| e.title == entry.title) {
+            if let Some(cached_entry) = cached_entries.iter_mut().find(|e| e.title == title) {
                 cached_entry.last_seen = now;
                 cache_changed = true;
             }
@@ -132,9 +132,9 @@ pub fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
             // If the title is not found in cached entries, push it
             // to new_entries and cached_entries
             let new = CachedEntry {
-                title: entry.title,
-                summary: entry.summary,
-                link: entry.link,
+                title,
+                summary,
+                link,
                 first_seen: now,
                 last_seen: now,
             };

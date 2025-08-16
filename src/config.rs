@@ -112,12 +112,12 @@ impl Config {
         let content =
             fs::read_to_string(path).map_err(|e| format!("Failed to read config file: {e}"))?;
 
-        let mut config_value: toml::Value = toml::from_str(&content)
-            .map_err(|e| format!("Failed to parse config file: {e}"))?;
+        let mut config_value: toml::Value =
+            toml::from_str(&content).map_err(|e| format!("Failed to parse config file: {e}"))?;
 
         let default = toml::Value::try_from(Config::default())
             .expect("Default config should serialize to toml::Value");
-        
+
         // Save to check if something has changed later
         let original_value = config_value.clone();
 
@@ -127,8 +127,7 @@ impl Config {
         // If the original value is different from the merged value,
         // it means some fields were missing or had wrong types,
         // and we write the updated config back to the file.
-        if &original_value != &config_value {
-            
+        if original_value != config_value {
             // Now try to deserialize the merged value
             let config: Config = config_value
                 .try_into()
@@ -138,7 +137,7 @@ impl Config {
             let updated = toml::to_string_pretty(&config)
                 .map_err(|e| format!("Failed to serialize updated config: {e}"))?;
             fs::write(path, updated).map_err(|e| format!("Failed to write updated config: {e}"))?;
-        
+
             Ok(config)
         } else {
             // If no changes were made, just deserialize the original value
@@ -150,7 +149,7 @@ impl Config {
     }
 
     /// Loads the configuration from the given file path.
-    /// 
+    ///
     /// - If the file does not exist, it creates a new config file with default values and returns those defaults.
     /// - If the file exists but is invalid TOML, prints an error and returns defaults (does not overwrite the file).
     /// - If the file is valid TOML but missing or has invalid fields, those fields are reset to defaults and the file is updated.
