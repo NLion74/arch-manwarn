@@ -14,7 +14,7 @@ pub struct NewsEntry {
 #[derive(Debug)]
 pub struct ManualInterventionResult {
     pub entries: Vec<NewsEntry>,
-    pub last_successful_request: Option<std::time::SystemTime>,
+    pub last_successful_request: Option<SystemTime>,
 }
 
 pub fn ignored_keywords(entry: &NewsEntry) -> bool {
@@ -63,8 +63,12 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
 
     // Biggest performance overhead is here:
     // This is where the actual network request to the feed is awaited
-    // Include tokio runtime initializing
-    let entries = get_entries_from_feeds();
+    let entries: Vec<NewsEntry> = CONFIG
+        .rss_feed_urls
+        .par_iter() // multithreading here
+        .map(|url| fetch_and_parse_single_feed(url))
+        .flatten()
+        .collect();
 
     let last_successful_request = if !entries.is_empty() {
         Some(start_time)
@@ -104,59 +108,16 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
     }
 }
 
-pub fn get_entries_from_feeds() -> Vec<NewsEntry> {
-    // Create a vector of futures, one for each feed URL
-    let fetches = CONFIG
-        .rss_feed_urls
-        .par_iter() // multithreading here
-        .map(|url| fetch_and_parse_single_feed(url));
-
-    // Await all fetches concurrently
-    // Flatten all entries into one Vec
-    fetches.flatten().collect()
-}
-
 fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
-    let mut current_url = url.to_string();
-
-    let content = {
-        let mut redirects = 0;
-        loop {
-            let response = match minreq::get(&current_url)
-                .with_follow_redirects(false)
-                .with_timeout(10)
-                .with_header("User-Agent", "arch-manwarn")
-                .send_lazy()
-            {
-                Ok(resp) => resp,
-                Err(err) => {
-                    eprintln!("Failed to fetch RSS feed {current_url}: {err}");
-                    return Vec::new();
-                }
-            };
-
-            if http_status_code::is_redirection(response.status_code) {
-                if redirects >= CONFIG.max_redirects {
-                    eprintln!("Too many redirects for {current_url}");
-                    return Vec::new();
-                }
-                if let Some(location) = response.headers.get("Location") {
-                    current_url = location.to_string();
-                    redirects += 1;
-                    continue;
-                } else {
-                    eprintln!("Redirect without Location header for {current_url}");
-                    return Vec::new();
-                }
-            } else if http_status_code::is_success(response.status_code) {
-                break response;
-            } else {
-                eprintln!(
-                    "Failed to fetch RSS feed {current_url}: HTTP status {}",
-                    response.status_code
-                );
-                return Vec::new();
-            }
+    let content = match minreq::get(url)
+        .with_timeout(10)
+        .with_header("User-Agent", "arch-manwarn")
+        .send_lazy()
+    {
+        Ok(resp) => resp,
+        Err(err) => {
+            eprintln!("Failed to fetch RSS feed {url}: {err}");
+            return Vec::new();
         }
     };
 
@@ -191,41 +152,4 @@ fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
             }
         })
         .collect()
-}
-
-#[allow(dead_code)]
-mod http_status_code {
-    // codes here are borrowed from https://github.com/hyperium/http/blob/master/src/status.rs
-
-    type StatusCode = i32;
-
-    /// Check if status is within 100-199.
-    #[inline]
-    pub fn is_informational(code: StatusCode) -> bool {
-        (100..200).contains(&code)
-    }
-
-    /// Check if status is within 200-299.
-    #[inline]
-    pub fn is_success(code: StatusCode) -> bool {
-        (200..300).contains(&code)
-    }
-
-    /// Check if status is within 300-399.
-    #[inline]
-    pub fn is_redirection(code: StatusCode) -> bool {
-        (300..400).contains(&code)
-    }
-
-    /// Check if status is within 400-499.
-    #[inline]
-    pub fn is_client_error(code: StatusCode) -> bool {
-        (400..500).contains(&code)
-    }
-
-    /// Check if status is within 500-599.
-    #[inline]
-    pub fn is_server_error(code: StatusCode) -> bool {
-        (500..600).contains(&code)
-    }
 }
