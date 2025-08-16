@@ -4,7 +4,7 @@ use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
 use std::io::BufReader;
 use std::time::SystemTime;
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct NewsEntry {
     pub title: String,
     pub summary: String,
@@ -17,49 +17,8 @@ pub struct ManualInterventionResult {
     pub last_successful_request: Option<SystemTime>,
 }
 
-pub fn ignored_keywords(entry: &NewsEntry) -> bool {
-    for keyword in &CONFIG.ignored_keywords {
-        if CONFIG.case_sensitive {
-            // Case-sensitive matching
-            if entry.title.contains(keyword) {
-                return true;
-            }
-            if CONFIG.include_summary_in_query && entry.summary.contains(keyword) {
-                return true;
-            }
-        } else {
-            // Case-insensitive matching
-            let keyword_lower = keyword.to_ascii_lowercase();
-            let title_lower = entry.title.to_ascii_lowercase();
-
-            if title_lower.contains(&keyword_lower) {
-                return true;
-            }
-            if CONFIG.include_summary_in_query {
-                let summary_lower = entry.summary.to_ascii_lowercase();
-                if summary_lower.contains(&keyword_lower) {
-                    return true;
-                }
-            }
-        }
-    }
-    false
-}
-
 pub fn check_for_manual_intervention() -> ManualInterventionResult {
     let start_time = SystemTime::now();
-
-    // Check for entries with keywords that indicate manual intervention
-    let keywords: Vec<String> = if CONFIG.case_sensitive {
-        CONFIG.keywords.to_vec()
-    } else {
-        CONFIG
-            .keywords
-            .iter()
-            .map(|kw| kw.to_ascii_lowercase())
-            .collect()
-    };
-    let mut found_entries = Vec::new();
 
     // Biggest performance overhead is here:
     // This is where the actual network request to the feed is awaited
@@ -70,37 +29,9 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
         .flatten()
         .collect();
 
-    let last_successful_request = if !entries.is_empty() {
-        Some(start_time)
-    } else {
-        None
-    };
+    let last_successful_request = (!entries.is_empty()).then_some(start_time);
 
-    if !CONFIG.match_all_entries {
-        for entry in entries {
-            let text = if CONFIG.include_summary_in_query {
-                format!("{} {}", entry.title, entry.summary)
-            } else {
-                entry.title.clone()
-            };
-
-            let text_to_check = if CONFIG.case_sensitive {
-                text
-            } else {
-                text.to_ascii_lowercase()
-            };
-
-            if keywords.iter().any(|kw| text_to_check.contains(kw)) && !ignored_keywords(&entry) {
-                found_entries.push(entry);
-            }
-        }
-    } else {
-        for entry in entries {
-            if !ignored_keywords(&entry) {
-                found_entries.push(entry);
-            }
-        }
-    }
+    let found_entries = match_entries::matches(entries);
 
     ManualInterventionResult {
         entries: found_entries,
@@ -152,4 +83,40 @@ fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
             }
         })
         .collect()
+}
+
+mod match_entries {
+    use crate::config::CONFIG;
+    use crate::rss::NewsEntry;
+
+    fn match_kw(kws: &[String], strs: &str) -> bool {
+        let strs = if CONFIG.case_sensitive {
+            strs.to_string()
+        } else {
+            strs.to_ascii_lowercase()
+        };
+
+        kws.iter().any(|kw| strs.contains(kw))
+    }
+
+    fn match_kw_all(kws: &[String], entry: &NewsEntry) -> bool {
+        let kws = if CONFIG.case_sensitive {
+            kws.to_vec()
+        } else {
+            kws.iter().map(|kw| kw.to_ascii_lowercase()).collect()
+        };
+
+        match_kw(&kws, &entry.title)
+            || (CONFIG.include_summary_in_query && match_kw(&kws, &entry.summary))
+    }
+
+    pub fn matches(entries: Vec<NewsEntry>) -> Vec<NewsEntry> {
+        entries
+            .into_iter()
+            // remove exclude first
+            .filter(|entry| !match_kw_all(&CONFIG.ignored_keywords, entry))
+            // keep all or match include
+            .filter(|entry| CONFIG.match_all_entries || match_kw_all(&CONFIG.keywords, entry))
+            .collect()
+    }
 }
