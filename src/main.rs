@@ -3,6 +3,9 @@ mod config;
 mod rss;
 use crate::config::CONFIG;
 
+#[cfg(test)]
+mod test;
+
 fn main() {
     let mut args = std::env::args();
 
