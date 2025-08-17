@@ -1,6 +1,7 @@
 use crate::config::CONFIG;
 use nanohtml2text::html2text;
-use std::str::FromStr as _;
+use rayon::iter::{IntoParallelRefIterator, ParallelIterator};
+use std::io::BufReader;
 use std::time::SystemTime;
 
 #[derive(Debug, Clone)]
@@ -13,7 +14,7 @@ pub struct NewsEntry {
 #[derive(Debug)]
 pub struct ManualInterventionResult {
     pub entries: Vec<NewsEntry>,
-    pub last_successful_request: Option<std::time::SystemTime>,
+    pub last_successful_request: Option<SystemTime>,
 }
 
 pub fn ignored_keywords(entry: &NewsEntry) -> bool {
@@ -62,8 +63,12 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
 
     // Biggest performance overhead is here:
     // This is where the actual network request to the feed is awaited
-    // Include tokio runtime initializing
-    let entries = get_entries_from_feeds();
+    let entries: Vec<NewsEntry> = CONFIG
+        .rss_feed_urls
+        .par_iter() // multithreading here
+        .map(|url| fetch_and_parse_single_feed(url))
+        .flatten()
+        .collect();
 
     let last_successful_request = if !entries.is_empty() {
         Some(start_time)
@@ -103,72 +108,23 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
     }
 }
 
-#[tokio::main]
-pub async fn get_entries_from_feeds() -> Vec<NewsEntry> {
-    // Create a vector of futures, one for each feed URL
-    let fetches = CONFIG
-        .rss_feed_urls
-        .iter()
-        .map(|url| fetch_and_parse_single_feed(url));
-
-    // Await all fetches concurrently
-    let results = tokio::task::JoinSet::from_iter(fetches).join_all().await;
-
-    // Flatten all entries into one Vec
-    results.into_iter().flatten().collect()
-}
-
-async fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
-    let mut current_url = url.to_string();
-
-    let content = {
-        let mut redirects = 0;
-        loop {
-            let mut response = match surf::get(&current_url)
-                .header("User-Agent", "arch-manwarn")
-                .send()
-                .await
-            {
-                Ok(resp) => resp,
-                Err(err) => {
-                    eprintln!("Failed to fetch RSS feed {current_url}: {err}");
-                    return Vec::new();
-                }
-            };
-
-            if response.status().is_redirection() {
-                if redirects >= CONFIG.max_redirects {
-                    eprintln!("Too many redirects for {current_url}");
-                    return Vec::new();
-                }
-                if let Some(location) = response.header("Location").and_then(|vals| vals.get(0)) {
-                    current_url = location.to_string();
-                    redirects += 1;
-                    continue;
-                } else {
-                    eprintln!("Redirect without Location header for {current_url}");
-                    return Vec::new();
-                }
-            } else if response.status().is_success() {
-                match response.body_string().await {
-                    Ok(text) => break text,
-                    Err(err) => {
-                        eprintln!("Failed to read response text from {current_url}: {err}");
-                        return Vec::new();
-                    }
-                }
-            } else {
-                eprintln!("Failed to fetch RSS feed {current_url}: HTTP status {}", response.status());
-                return Vec::new();
-            }
+fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
+    let content = match minreq::get(url)
+        .with_timeout(10)
+        .with_header("User-Agent", "arch-manwarn")
+        .send_lazy()
+    {
+        Ok(resp) => resp,
+        Err(err) => {
+            eprintln!("Failed to fetch RSS feed {url}: {err}");
+            return Vec::new();
         }
     };
 
-
-    let channel = match rss::Channel::from_str(&content) {
+    let channel = match rss::Channel::read_from(BufReader::new(content)) {
         Ok(ch) => ch,
         Err(err) => {
-            eprintln!("Failed to parse feed {url}: {err}");
+            eprintln!("Failed to read/parse feed {url}: {err}");
             return Vec::new();
         }
     };
@@ -177,13 +133,17 @@ async fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
         .items
         .into_iter()
         .map(|entry| {
-            let title = entry.title.unwrap_or_else(|| "[No title provided]".to_string());
+            let title = entry
+                .title
+                .unwrap_or_else(|| "[No title provided]".to_string());
             let summary = match (entry.content, entry.description) {
                 (None, None) => "[No summary provided]".to_string(),
                 (Some(c), Some(d)) if c.len() > d.len() => c,
                 (_, Some(s)) | (Some(s), None) => s,
             };
-            let link = entry.link.unwrap_or_else(|| "[No link provided]".to_string());
+            let link = entry
+                .link
+                .unwrap_or_else(|| "[No link provided]".to_string());
 
             NewsEntry {
                 title,
