@@ -19,8 +19,7 @@ strip = "symbols"
 [dependencies]
 serde = { version = "1.0.219", features = ["derive"] }
 serde_json = "1.0.142"
-once_cell = "1.21.3"
-toml = "0.9.4"
+toml = "0.9.5"
 nanohtml2text = "0.2.1"
 rss = { version = "2.0.12", default-features = false }
 minreq = { version = "2.14.0", features = ["https-native"] }
