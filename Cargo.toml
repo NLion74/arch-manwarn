@@ -5,7 +5,7 @@ description = "A tool to monitor Arch Linux news for manual intervention entries
 license = "UNLICENSE"
 repository = "https://github.com/nlion/arch-manwarn"
 authors = ["nlion <nlion@nlion.nl>"]
-edition = "2021"
+edition = "2024"
 
 
 [profile.release]
@@ -24,4 +24,4 @@ toml = "0.9.4"
 nanohtml2text = "0.2.1"
 rss = { version = "2.0.12", default-features = false }
 minreq = { version = "2.14.0", features = ["https-native"] }
-rayon = "1.10.0"
+rayon = "1.11.0"

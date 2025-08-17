@@ -110,7 +110,7 @@ pub fn check_for_manual_intervention() -> ManualInterventionResult {
 
 fn fetch_and_parse_single_feed(url: &str) -> Vec<NewsEntry> {
     let content = match minreq::get(url)
-        .with_timeout(10)
+        .with_timeout(CONFIG.request_timeout)
         .with_header("User-Agent", "arch-manwarn")
         .send_lazy()
     {
