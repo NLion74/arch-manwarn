@@ -22,7 +22,7 @@ pub fn config_path() -> PathBuf {
 fn merge_defaults(value: &mut toml::Value, default: &toml::Value) {
     match (value, default) {
         // Both are tables: merge recursively
-        (toml::Value::Table(ref mut user_table), toml::Value::Table(default_table)) => {
+        (toml::Value::Table(user_table), toml::Value::Table(default_table)) => {
             for (key, default_val) in default_table {
                 match user_table.get_mut(key) {
                     Some(user_val) => {
@@ -44,6 +44,7 @@ fn merge_defaults(value: &mut toml::Value, default: &toml::Value) {
         }
     }
 }
+
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(default)]
 pub struct Config {
@@ -70,8 +71,8 @@ pub struct Config {
     /// URLs for the RSS feeds
     pub rss_feed_urls: Vec<String>,
 
-    /// Maximum number of redirects to follow
-    pub max_redirects: u32,
+    /// Timeout (in seconds) for any HTTP requests to RSS feeds
+    pub request_timeout: u64,
 
     /// Whether to show summary on check
     /// If false, only title and link will be shown
@@ -92,7 +93,7 @@ impl Default for Config {
         Self {
             cache_path: "/var/cache/arch-manwarn.json".to_string(),
             rss_feed_urls: vec!["https://archlinux.org/feeds/news/".to_string()],
-            max_redirects: 5,
+            request_timeout: 10,
             keywords: vec!["manual intervention".to_string()],
             ignored_keywords: vec![],
             case_sensitive: false,

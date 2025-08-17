@@ -118,8 +118,8 @@ rss_feed_urls = [
     "https://archlinux.org/feeds/news/",
 ]
 
-# Maximum number of redirects to follow on rss feed fetch
-max_redirects = 5
+# Timeout (in seconds) for any HTTP requests to RSS feeds
+request_timeout = 10
 
 # Display summaries for matching news posts
 show_summary = false

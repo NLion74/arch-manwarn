@@ -149,7 +149,7 @@ pub fn check_new_entries(force_mark_as_read: bool) -> Vec<CachedEntry> {
     {
         // Retain only cached entries that are not over CONFIG.prune_missing_days old
         // and have not been seen in the feed entries in the last CONFIG.prune_age_days days
-        let prune_threshold_missing = now.saturating_sub((CONFIG.prune_missing_days) * 24 * 3600);
+        let prune_threshold_missing= now.saturating_sub((CONFIG.prune_missing_days) * 24 * 3600);
         let prune_threshold_age = now.saturating_sub((CONFIG.prune_age_days) * 24 * 3600);
 
         let before_len = cached_entries.len();
