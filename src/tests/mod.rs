@@ -1,4 +1,4 @@
-mod match_entries;
+mod match_entries_test;
 
 use crate::config::Config;
 use simple_semaphore::{Permit, Semaphore};

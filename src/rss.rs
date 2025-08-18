@@ -91,7 +91,7 @@ pub mod match_entries {
     use crate::config::CONFIG;
     use crate::rss::NewsEntry;
     #[cfg(test)]
-    use crate::test::CONFIG;
+    use crate::tests::CONFIG;
 
     fn match_kw(kws: &[String], strs: &str) -> bool {
         let strs = if CONFIG.case_sensitive {
