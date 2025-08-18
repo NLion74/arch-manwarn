@@ -114,13 +114,64 @@ pub mod match_entries {
             || (CONFIG.include_summary_in_query && match_kw(&kws, &entry.summary))
     }
 
+    fn get_installed_packages() -> Vec<String> {
+        let mut pkgs = Vec::new();
+        let path = "/var/lib/pacman/local";
+
+        if let Ok(entries) = std::fs::read_dir(path) {
+            for entry in entries.flatten() {
+                if let Some(name) = entry.file_name().to_str() {
+
+                    // Go through all dashes in the package name
+                    // and check if the next character is a digit.
+                    // e.g.`foo-bar-6.1.12-1` should be `foo-bar`
+                    let pkgname = name
+                        .find(|c: char| c == '-')
+                        .and_then(|i| {
+                            if name[i+1..].chars().next().map(|c| c.is_digit(10)).unwrap_or(false) {
+                                Some(&name[..i])
+                            } else {
+                                let mut idx = i + 1;
+                                while let Some(pos) = name[idx..].find('-') {
+                                    let dash_pos = idx + pos;
+                                    if name[dash_pos+1..].chars().next().map(|c| c.is_digit(10)).unwrap_or(false) {
+                                        return Some(&name[..dash_pos]);
+                                    }
+                                    idx = dash_pos + 1;
+                                }
+                                None
+                            }
+                        })
+                        .unwrap_or(name);
+
+                    pkgs.push(pkgname.to_ascii_lowercase());
+                }
+            }
+        } else {
+            eprintln!("[arch-manwarn] Failed to read {path}");
+        }
+
+        pkgs.sort();
+        pkgs.dedup();
+        pkgs
+    }
+
     pub fn matches(entries: Vec<NewsEntry>) -> Vec<NewsEntry> {
+        let mut keywords = CONFIG.keywords.clone();
+
+        // Add installed packages to keywords if the config option is enabled
+        if CONFIG.installed_packages_in_keywords {
+            let mut installed_pkgs = get_installed_packages();
+
+            keywords.append(&mut installed_pkgs);
+        }
+
         entries
             .into_iter()
-            // remove exclude first
+            // remove excluded entries first
             .filter(|entry| !match_kw_all(&CONFIG.ignored_keywords, entry))
-            // keep all or match include
-            .filter(|entry| CONFIG.match_all_entries || match_kw_all(&CONFIG.keywords, entry))
+            // keep all entries if configured, or only those that match keywords
+            .filter(|entry| CONFIG.match_all_entries || match_kw_all(&keywords, entry))
             .collect()
     }
 }

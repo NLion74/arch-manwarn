@@ -104,6 +104,10 @@ case_sensitive = false
 # Include the summary in keyword matching
 include_summary_in_query=true
 
+# Whether to add installed package names to keyword matching
+# Recommended to disable include_summary_in_query with this option
+include_installed_packages = false
+
 # Both of these conditions must be met to prune a cached news entry:
 # 1. It has not been seen in the RSS feed for `prune_missing_days`, AND
 # 2. It is older than `prune_age_days`.

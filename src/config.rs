@@ -64,6 +64,9 @@ pub struct Config {
     /// If false, only the title will be searched
     pub include_summary_in_query: bool,
 
+    /// Whether to add installed package names to keyword matching
+    pub installed_packages_in_keywords: bool,
+
     /// Number of days to retain cache
     pub prune_missing_days: u64,
     pub prune_age_days: u64,
@@ -98,6 +101,7 @@ impl Default for Config {
             ignored_keywords: vec![],
             case_sensitive: false,
             include_summary_in_query: true,
+            installed_packages_in_keywords: false,
             prune_missing_days: 30,
             prune_age_days: 60,
             match_all_entries: false,
