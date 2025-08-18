@@ -24,6 +24,7 @@ nanohtml2text = "0.2.1"
 rss = { version = "2.0.12", default-features = false }
 minreq = { version = "2.14.0", features = ["https-native"] }
 rayon = "1.11.0"
+alpm = "4.0.3"
 
 [dev-dependencies]
 simple-semaphore = "0.2.0"

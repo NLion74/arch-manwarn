@@ -92,6 +92,7 @@ pub mod match_entries {
     use crate::rss::NewsEntry;
     #[cfg(test)]
     use crate::tests::CONFIG;
+    use alpm::Alpm;
 
     fn match_kw(kws: &[String], strs: &str) -> bool {
         let strs = if CONFIG.case_sensitive {
@@ -115,44 +116,19 @@ pub mod match_entries {
     }
 
     fn get_installed_packages() -> Vec<String> {
-        let mut pkgs = Vec::new();
-        let path = "/var/lib/pacman/local";
+        let alpm = Alpm::new("/", "/var/lib/pacman").expect("failed to init alpm");
 
-        if let Ok(entries) = std::fs::read_dir(path) {
-            for entry in entries.flatten() {
-                if let Some(name) = entry.file_name().to_str() {
-
-                    // Go through all dashes in the package name
-                    // and check if the next character is a digit.
-                    // e.g.`foo-bar-6.1.12-1` should be `foo-bar`
-                    let pkgname = name
-                        .find(|c: char| c == '-')
-                        .and_then(|i| {
-                            if name[i+1..].chars().next().map(|c| c.is_digit(10)).unwrap_or(false) {
-                                Some(&name[..i])
-                            } else {
-                                let mut idx = i + 1;
-                                while let Some(pos) = name[idx..].find('-') {
-                                    let dash_pos = idx + pos;
-                                    if name[dash_pos+1..].chars().next().map(|c| c.is_digit(10)).unwrap_or(false) {
-                                        return Some(&name[..dash_pos]);
-                                    }
-                                    idx = dash_pos + 1;
-                                }
-                                None
-                            }
-                        })
-                        .unwrap_or(name);
-
-                    pkgs.push(pkgname.to_ascii_lowercase());
-                }
-            }
-        } else {
-            eprintln!("[arch-manwarn] Failed to read {path}");
-        }
+        let mut pkgs: Vec<String> = alpm.localdb()
+            .pkgs()
+            .iter()
+            .map(|pkg| pkg.name().to_string())
+            .collect();
 
         pkgs.sort();
         pkgs.dedup();
+
+        println!("{:?}", pkgs);
+
         pkgs
     }
 
