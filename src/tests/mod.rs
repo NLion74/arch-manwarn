@@ -24,40 +24,43 @@ fn init_config(conf: Config) -> Permit {
     static SEMAPHORE: LazyLock<Arc<Semaphore>> = LazyLock::new(|| Semaphore::new(1));
     // ensure config is kept before being overwritten
     let permit = SEMAPHORE.acquire();
-    CONFIG.replace(conf);
+    CONFIG.extend(conf);
     permit
 }
 
 mod utils {
     use std::{ops::Deref, sync::OnceLock};
 
-    #[derive(Debug)]
     pub struct ChainList<T> {
         inner: T,
         next: OnceLock<Box<ChainList<T>>>,
     }
 
-    impl<T: std::fmt::Debug> ChainList<T> {
-        pub fn new(inner: T) -> Self {
+    impl<T> ChainList<T> {
+        pub(super) const fn new(inner: T) -> Self {
             Self {
                 inner,
                 next: OnceLock::new(),
             }
         }
 
-        pub fn replace(&self, inner: T) {
-            self.as_inner()
+        pub(super) fn extend(&self, inner: T) {
+            if self
+                .as_inner_self()
                 .next
                 .set(Box::new(ChainList {
                     inner,
                     next: OnceLock::new(),
                 }))
-                .unwrap()
+                .is_err()
+            {
+                unreachable!("ChainList failed to extend itself")
+            }
         }
 
-        fn as_inner(&self) -> &Self {
+        fn as_inner_self(&self) -> &Self {
             if let Some(next) = self.next.get() {
-                next.as_inner()
+                next.as_inner_self()
             } else {
                 &self
             }
@@ -68,11 +71,7 @@ mod utils {
         type Target = T;
 
         fn deref(&self) -> &Self::Target {
-            if let Some(next) = self.next.get() {
-                &next
-            } else {
-                &self.inner
-            }
+            &self.as_inner_self().inner
         }
     }
 
@@ -80,9 +79,9 @@ mod utils {
     fn test() {
         let target = ChainList::new(1u8);
         assert_eq!(*target, 1);
-        target.replace(2);
+        target.extend(2);
         assert_eq!(*target, 2);
-        target.replace(8);
+        target.extend(8);
         assert_eq!(*target, 8);
     }
 }
