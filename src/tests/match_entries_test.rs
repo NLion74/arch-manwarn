@@ -34,6 +34,68 @@ fn case_sensitive() {
     );
 }
 
+#[test]
+fn ignored_keywords_exclude_matches() {
+    let _permit = init_config(Config {
+        keywords: vec!["manual intervention".to_string()],
+        match_all_entries: false,
+        ignored_keywords: vec!["zabbix".to_string()],
+        case_sensitive: false,
+        include_summary_in_query: false,
+        ..Default::default()
+    });
+
+    assert_eq!(
+        select_entries([true, true, true, false]),
+        matches(entries())
+    );
+}
+
+#[test]
+fn match_in_summary_when_enabled() {
+    let _permit = init_config(Config {
+        keywords: vec!["symlink".to_string()],
+        match_all_entries: false,
+        ignored_keywords: vec![],
+        case_sensitive: false,
+        include_summary_in_query: true,
+        ..Default::default()
+    });
+
+    assert_eq!(select_entries([true, false, false, false]), matches(entries()));
+}
+
+#[test]
+fn no_keywords_matches_nothing() {
+    let _permit = init_config(Config {
+        keywords: vec![],
+        match_all_entries: false,
+        ignored_keywords: vec![],
+        case_sensitive: false,
+        include_summary_in_query: false,
+        ..Default::default()
+    });
+
+    assert!(matches(entries()).is_empty());
+}
+
+#[test]
+fn ignored_keywords_with_case_sensitive() {
+    let _permit = init_config(Config {
+        keywords: vec!["manual intervention".to_string()],
+        match_all_entries: false,
+        ignored_keywords: vec!["ZABBIX".to_string()],
+        case_sensitive: true,
+        include_summary_in_query: false,
+        ..Default::default()
+    });
+
+    assert_eq!(
+        select_entries([true, true, false, true]),
+        matches(entries())
+    );
+}
+
 fn select_entries(bools: [bool; 4]) -> Vec<NewsEntry> {
     entries()
         .into_iter()
