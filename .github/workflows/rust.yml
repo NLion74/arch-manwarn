@@ -16,6 +16,8 @@ jobs:
 
         steps:
             - uses: actions/checkout@v4
+            - name: Install dependencies
+              run: pacman -Syu --noconfirm base-devel rust cargo pkgconf
             - name: Build
               run: cargo build --verbose
             - name: Run tests
