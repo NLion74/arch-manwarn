@@ -127,8 +127,6 @@ pub mod match_entries {
         pkgs.sort();
         pkgs.dedup();
 
-        println!("{:?}", pkgs);
-
         pkgs
     }
 
