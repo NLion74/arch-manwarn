@@ -1,5 +1,7 @@
 # arch-manwarn
 
+> Rust-based pacman hook that prevents upgrades when Arch News requires manual intervention.
+
 [![AUR version](https://img.shields.io/aur/version/arch-manwarn)](https://aur.archlinux.org/packages/arch-manwarn)
 [![GitHub stars](https://img.shields.io/github/stars/NLion74/arch-manwarn?style=social)](https://github.com/NLion74/arch-manwarn/stargazers)
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](https://unlicense.org/)
@@ -22,6 +24,17 @@ arch-manwarn
 ```
 
 This should return a short confirmation message.
+
+## Why arch-manwarn?
+
+I created this tool to avoid missing important manual interventions in the Arch news.
+
+Unlike tools that interrupt you for every news post, **arch-manwarn** blocks transactions **only** for the ones matching your defined keywords.
+It's lean, fast, and written in Rust - prioritizing **configurability, efficiency, and precision**.
+
+Optionally, you can enable package-aware matching with `include_installed_packages = true`. This adds your installed package names to the query, so you will also be warned when a news post directly mentions packages present on your system. For more configuration options see [Configuration](#configuration)
+
+If you want to be notified of **every** Arch news post, you can either configure **arch-manwarn** to match all entries or check out [informant](https://github.com/bradford-smith94/informant), an alternative designed for that behavior.
 
 ## Modes of Operation
 
@@ -46,18 +59,6 @@ The **pacman hook** only activates on upgrades or installs therefore if for any 
 ```
 sudo pacman -Rns arch-manwarn
 ```
-
-## Why arch-manwarn?
-
-I created this tool to avoid missing important manual interventions in the Arch news.
-
-But unlike tools that intrusively interrupt you for every news post, **arch-manwarn** blocks transactions **only** for the ones matching your defined criteria.
-
-It's lean, fast, and written in Rust — prioritizing **simplicity, efficiency, and precision**.
-
-Instead of intrusively blocking every `pacman` transaction for every news, **arch-manwarn** filters _only_ those which require manual intervention.
-
-If you want to be notified of **every** Arch news post, you can either configure **arch-manwarn** to match all entries or check out [informant](https://github.com/bradford-smith94/informant), an alternative designed for that behavior.
 
 ## Installation
 
