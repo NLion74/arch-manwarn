@@ -18,11 +18,11 @@ strip = "symbols"
 
 [dependencies]
 serde = { version = "1.0.219", features = ["derive"] }
-serde_json = "1.0.142"
-toml = "0.9.5"
+serde_json = "1.0.145"
+toml = "0.9.8"
 nanohtml2text = "0.2.1"
 rss = { version = "2.0.12", default-features = false }
-minreq = { version = "2.14.0", features = ["https-native"] }
+minreq = { version = "2.14.1", features = ["https-native"] }
 rayon = "1.11.0"
 alpm = "4.0.3"
 
