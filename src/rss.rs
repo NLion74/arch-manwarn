@@ -92,7 +92,6 @@ pub mod match_entries {
     use crate::rss::NewsEntry;
     #[cfg(test)]
     use crate::tests::CONFIG;
-    use alpm::Alpm;
 
     fn match_kw(kws: &[String], strs: &str) -> bool {
         let strs = if CONFIG.case_sensitive {
@@ -116,13 +115,17 @@ pub mod match_entries {
     }
 
     fn get_installed_packages() -> Vec<String> {
-        let alpm = Alpm::new("/", "/var/lib/pacman").expect("failed to init alpm");
-
-        let mut pkgs: Vec<String> = alpm.localdb()
-            .pkgs()
-            .iter()
-            .map(|pkg| pkg.name().to_string())
-            .collect();
+        let mut pkgs: Vec<String> =
+            if let Ok(ret) = std::process::Command::new("pacman").arg("-Qq").output() {
+                String::from_utf8(ret.stdout)
+                    .unwrap_or_default()
+                    .lines()
+                    .map(|s| s.to_owned())
+                    .collect()
+            } else {
+                eprintln!("[arch-manwarn] Failed to get installed packages from pacman");
+                vec![]
+            };
 
         pkgs.sort();
         pkgs.dedup();
