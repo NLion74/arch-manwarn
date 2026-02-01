@@ -2,6 +2,7 @@ mod cache;
 mod config;
 mod rss;
 use crate::config::CONFIG;
+mod state;
 
 #[cfg(test)]
 mod tests;
@@ -39,6 +40,11 @@ fn main() {
                     }
                 }
                 eprintln!("\nAll other news can be found on https://archlinux.org/news/.");
+                
+                let state_file = state::StateFile::new(&new_entries);
+                if let Err(e) = state_file.write() {
+                    eprintln!("[arch-manwarn] Warning: Failed to write state file: {e}");
+                }
 
                 if CONFIG.warn_only {
                     eprintln!(

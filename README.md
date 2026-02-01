@@ -40,10 +40,10 @@ If you want to be notified of **every** Arch news post, you can either configure
 
 `arch-manwarn` supports four modes:
 
--   `arch-manwarn` - Prints quick confirmation message (used for sanity checks).
--   `arch-manwarn check` - Used internally by the pacman hook to detect new warnings.
--   `arch-manwarn status` - Displays a list of cached matching warnings with timestamps.
--   `arch-manwarn read` - Manually mark all unread warnings as read (usually not needed unless configuration is adjusted).
+- `arch-manwarn` - Prints quick confirmation message (used for sanity checks).
+- `arch-manwarn check` - Used internally by the pacman hook to detect new warnings.
+- `arch-manwarn status` - Displays a list of cached matching warnings with timestamps.
+- `arch-manwarn read` - Manually mark all unread warnings as read (usually not needed unless configuration is adjusted).
 
     On first run, it assumes you have already read all previous warnings.
 
