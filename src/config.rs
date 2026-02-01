@@ -89,12 +89,17 @@ pub struct Config {
 
     /// Path where cache is stored
     pub cache_path: String,
+
+    // Add to Config struct:
+    /// Path where state file is written when unread news is detected
+    pub state_file_path: Option<String>,
 }
 
 impl Default for Config {
     fn default() -> Self {
         Self {
             cache_path: "/var/cache/arch-manwarn.json".to_string(),
+            state_file_path: Some("/run/arch-manwarn/state.json".to_string()),
             rss_feed_urls: vec!["https://archlinux.org/feeds/news/".to_string()],
             request_timeout: 10,
             keywords: vec!["manual intervention".to_string()],
