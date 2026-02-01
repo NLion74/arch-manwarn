@@ -137,6 +137,11 @@ warn_only = false
 
 # Where to store the cache
 cache_path = "/var/cache/arch-manwarn.json"
+
+# Optional: Path to write state file when unread news is detected
+# Set to enable external notifications (e.g., via systemd path units)
+# Comment out or set to empty string to disable
+state_file_path = "/run/arch-manwarn/state.json"
 ```
 
 ## Development
@@ -148,6 +153,7 @@ Due to permission issues when running the program manually instead of via the ar
 ```
 ARCH_NEWS_CACHE_PATH=./arch-manwarn-cache.json \
 ARCH_MANWARN_CONFIG=./arch-manwarn-config.toml \
+ARCH_MANWARN_STATE_FILE=./arch-manwarn-state.json \
 cargo run
 ```
 
