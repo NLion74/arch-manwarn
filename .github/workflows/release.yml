@@ -4,38 +4,19 @@ on:
     push:
         tags:
             - "v*"
-    workflow_dispatch:
-
-permissions:
-    contents: write
 
 jobs:
-    create-release:
-        name: Create GitHub Release
+    build-release:
         runs-on: ubuntu-latest
         steps:
             - uses: actions/checkout@v4
-            - uses: taiki-e/create-gh-release-action@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-    upload-assets:
-        name: Build & upload (${{ matrix.target }})
-        needs: create-release
-        runs-on: ubuntu-latest
-        strategy:
-            fail-fast: false
-            matrix:
-                target:
-                    - x86_64-unknown-linux-gnu
-                    - aarch64-unknown-linux-gnu
-        steps:
-            - uses: actions/checkout@v4
-            - uses: taiki-e/upload-rust-binary-action@v1
+            - uses: dtolnay/rust-toolchain@stable
+            - name: Build binary
+              run: cargo build --release
+            - name: Package archive
+              run: |
+                  tar -czvf arch-manwarn-x86_64.tar.gz -C target/release arch-manwarn -C ../../ hooks/
+            - name: Upload Release Asset
+              uses: softprops/action-gh-release@v2
               with:
-                  bin: arch-manwarn
-                  target: ${{ matrix.target }}
-                  include: hooks/arch-manwarn.hook,man/arch-manwarn.1,LICENSE,README.md
-                  checksum: sha256
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+                  files: arch-manwarn-x86_64.tar.gz
