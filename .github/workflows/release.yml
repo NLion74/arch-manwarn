@@ -5,18 +5,40 @@ on:
         tags:
             - "v*"
 
+permissions:
+    contents: write
+
 jobs:
     build-release:
         runs-on: ubuntu-latest
+
         steps:
             - uses: actions/checkout@v4
+
             - uses: dtolnay/rust-toolchain@stable
+
             - name: Build binary
               run: cargo build --release
-            - name: Package archive
+
+            - name: Prepare release archive
               run: |
-                  tar -czvf arch-manwarn-x86_64.tar.gz -C target/release arch-manwarn -C ../../ hooks/
+                  mkdir -p dist/arch-manwarn
+
+                  cp target/release/arch-manwarn dist/arch-manwarn/
+                  cp -r hooks dist/arch-manwarn/
+
+                  # Optional files if they exist
+                  [ -d man ] && cp -r man dist/arch-manwarn/
+                  [ -f LICENSE ] && cp LICENSE dist/arch-manwarn/
+                  [ -f README.md ] && cp README.md dist/arch-manwarn/
+
+                  tar -czvf arch-manwarn-x86_64.tar.gz \
+                      -C dist \
+                      arch-manwarn
+
             - name: Upload Release Asset
               uses: softprops/action-gh-release@v2
               with:
                   files: arch-manwarn-x86_64.tar.gz
+              env:
+                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

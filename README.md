@@ -3,6 +3,7 @@
 > Rust-based pacman hook that prevents upgrades when Arch News requires manual intervention.
 
 [![AUR version](https://img.shields.io/aur/version/arch-manwarn)](https://aur.archlinux.org/packages/arch-manwarn)
+[![AUR BIN version](https://img.shields.io/aur/version/arch-manwarn-bin)](https://aur.archlinux.org/packages/arch-manwarn-bin)
 [![GitHub stars](https://img.shields.io/github/stars/NLion74/arch-manwarn?style=social)](https://github.com/NLion74/arch-manwarn/stargazers)
 [![License: Unlicense](https://img.shields.io/badge/license-Unlicense-blue.svg)](https://unlicense.org/)
 [![GitHub release](https://img.shields.io/github/v/release/NLion74/arch-manwarn)](https://github.com/NLion74/arch-manwarn/releases)
